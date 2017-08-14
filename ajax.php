@@ -1,7 +1,7 @@
 <?php
-$servername = "127.0.0.1";
+$servername = "107.170.208.38";
 $username = "root";
-$password = "SURF2017";
+$password = "surf2017";
 $db = "molecules";
 
 // Create connection
