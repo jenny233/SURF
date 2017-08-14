@@ -1,0 +1,28 @@
+Alkyl|Alkane|CH2|3|C|H 0-1|H 0-1
+Alkenyl|Alkene|CC|2|C|C 0-2
+Alkynyl|Alkyne|CC|2|C|C 0-3
+Hydroxyl|Alcohol|OH|2|O|H 0-1
+Carbonyl|Ketone|CO|2|C|O 0-2
+Aldehyde|Aldehyde|CHO|3|C|H 0-1|O 0-2
+Carbonate ester|Carbonate|OCOO|4|O|C 0-1|O 1-1|O 1-2
+Carboxylate|Carboxylate|COO-|3|C|O 0-1.5|O 0-1.5
+Carboxyl|Carboxylic Acid|COOH|4|C|O 0-2|O 0-1|H 2-1
+Ester|Ester|COO|3|C|O 0-1|O 0-2
+Methoxy|Methoxy|OCH3|5|O|C 0-1|H 1-1|H 1-1|H 1-1
+Carboxamide|Amide|CON|3|C|O 0-2|N 0-1
+Primary amine|Amine|NH2|3|N|H 0-1|H 0-1
+Secondary amine|Amine|NH|2|N|H 0-1
+Primary ketimine|Imine|C(=NH)|3|C|N 0-2|H 1-1
+Secondary ketimine|Imine|C(=N)|2|C|N 0-2
+Primary aldimine|Imine|C(=NH)H|4|C|N 0-2|H 0-1|H 1-1
+Secondary aldimine|Imine|C(=NR)H|3|C|N 0-2|H 0-1
+Nitrile|Nitrile|CN|2|C|N 0-3
+Isonitrile|Nitrile|NC|2|N|C 0-3
+Disulfide|Disulfide|SS|2|S|S 0-1
+Chloroformyl|Acyl chloride Acid chloride|COCl|3|C|O 0-2|Cl 0-1
+Acid fluoride|Acyl fluoride|COF|3|C|O 0-2|F 0-1
+Acid bromide|Acyl bromide|COBr|3|C|O 0-2|Br 0-1
+Acid iodide|Acyl iodide|COI|3|C|O 0-2|I 0-1
+Acid halide|Acyl halide|COX|3|C|O 0-2|X 0-1
+Sulfhydryl|Thiol|SH|2|S|H 0-1
+Nitro|Nitro|NO2|3|N|O 0-1|O 0-2

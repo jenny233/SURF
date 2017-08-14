@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Molecule Builder</title>
+		
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+		<!-- jQuery library -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+		<!-- JavaScript Library -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		
+		<!-- Viewport setting -->
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<!-- Fabric JS -->
+		<script src="fabric.js"></script>
+		
+		<!-- Three JS -->
+		<script src="three.min.js"></script>
+		
+		<!-- My JS and CSS files -->
+		<script src="molecule_script.js"></script>
+		<link rel="stylesheet" type="text/css" href="styles.css"/>
+		
+	</head>
+	
+	<body>
+		<div class="container-fluid">
+			
+			<div class="row" id="pageContent">
+				
+				<!-- Here goes the selection side bar -->
+				<div class="col-sm-3 sidebar" style="height:100%">
+					
+					<!-- (1) Choose to import a molecule -->
+					<div id="importMolecule">
+						
+						<label class="sectionLabel" for="importMolecule">
+							<span class="glyphicon glyphicon-cloud-download" aria-hidden="true"></span>
+							Import a molecule
+						</label>
+						
+						<input type="search" class="form-control" id="searchMolecule"
+						 placeholder="Search..." onkeyup="search_molecule(this.value)"></input>
+						<ul id="moleculeList" class="searchList hidden"></ul>
+						
+						<div class="modal fade" id="importAlert">
+						  <div class="modal-dialog" role="document">
+						    <div class="modal-content">
+						      <div class="modal-header">
+						        <h5 class="modal-title">Note</h5>
+						        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						          <span aria-hidden="true">&times;</span>
+						        </button>
+						      </div>
+						      <div class="modal-body">
+						        <p>The canvas needs to be cleared before importing a new molecule.</p>
+						      </div>
+						      
+						    </div>
+						  </div>
+						</div>
+						
+					</div>
+					
+					<br>
+					
+					<!-- (2) Choose to add a new bond -->
+					<div id="newBond">
+						<label class="sectionLabel" for="newBond">
+							<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+							Add new atom(s)
+						</label>
+						
+					
+						<label for="atomOrGroup">Atom or functional group?</label>
+						<select class="form-control" id="atomOrGroup">
+							<option value="default" selected>Select</option>
+							<option value="atom">Atom</option>
+							<option value="group">Functional group</option>
+						</select>
+						
+						<label for="boSelect" id="boSelectLabel">Select bond order</label>
+						<select class="form-control" id="boSelect">
+							<option value="default" selected>Select</option>
+							<option value=1>1 - Single</option>
+							<option value=2>2 - Double</option>
+							<option value=3>3 - Triple</option>
+							<option value=-1>Other</option>
+						</select>
+						<input type="text" class="form-control hidden" id="boInput" placeholder="Enter bond order...">
+						
+						
+						<!-- If "atom" is selected, show the "newAtom" selections -->
+						<div id="newAtom" class="hidden">
+							<label for="elementSelect">Select an element</label>
+							<select class="form-control" id="elementSelect">
+								<option value="default" selected>Select</option>
+								<option value="H">H</option>
+								<option value="C">C</option>
+								<option value="N">N</option>
+								<option value="O">O</option>
+								<option value="F">F</option>
+								<option value="S">S</option>
+								<option value="Cl">Cl</option>
+								<option value="I">I</option>
+								<option value="Br">Br</option>
+							</select>
+						</div>
+					
+						<!-- If "group" is selected, show the functional group search -->
+						<div id="newGroup" class="hidden">
+							<label for="searchFuncGroup">Search for a functional group</label>
+							<input type="search" class="form-control" id="searchFuncGroup"
+							 placeholder="Search..." onkeyup="search_func_group(this.value)"></input>
+							<ul id="funcGroupList" class="searchList hidden"></ul>
+						</div>
+						
+						
+					</div>
+					
+					<div>
+						<!-- The "Bond" button -->
+						<button id="bondBtn" class="btn btn-primary">Bond!</button>
+						<!-- The "Clear" button -->
+						<button id="clearBtn" class="btn btn-primary">Clear</button>
+					</div>
+				</div>
+				
+				
+				<!-- Here goes the middle section -->
+				<div class="col-sm-6 midbar">
+					
+					<!-- Tool bar -->
+					<div id="topToolbar" class="row">
+						<div class="btn-toolbar btn-group row" id="toolbarBtnGroup">
+							<span data-toggle="tooltip" data-placement="bottom" title="3D View">
+								<button type="button" id="threeDBtn" class="btn-secondary btn toolbarBtn" data-toggle="modal" data-target="#myModal"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Change bond order">
+								<button type="button" id="changeBOBtn" class="btn-secondary btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Save">
+								<button type="button" id="saveMoleculeBtn" class="btn-secondary btn toolbarBtn">
+									<span class="glyphicon glyphicon-floppy-save"></span>
+								</button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Pick two atoms to bond">
+								<button type="button" id="pickTwoBtn" class="btn-secondary btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Hide Hydrogen">
+								<button type="button" id="toggleHBtn" class="btn-secondary btn toolbarBtn"></button>
+							</span>
+						</div>
+					
+						<div class="hidden infoRow" id="pickTwoInfoRow">
+							<p id="pickTwoInfo" class="infoElement"></p>
+							<div class="btn-group infoElement" id="pickedBtnGroup">
+								<button type="button" class="btn btn-default" id="okPickedAtoms" disabled>
+								  <span class="glyphicon glyphicon-ok-circle"></span> OK
+								</button>
+								<button type="button" class="btn btn-default" id="quitPickedAtoms">
+								  <span class="glyphicon glyphicon-remove-circle"></span> QUIT
+								</button>
+							</div>
+						</div>
+						
+						<div id="changeBOInfoRow" class="hidden infoRow" >
+							<div id="tooltipBOChange" class="infoElement hidden">
+								<p><b>Click on a bond to see or change its bond order</b></p>
+							</div>
+							<div id="makeBOChange" class="infoElement hidden">
+								<p>
+									<b>Current bond order: </b>
+									<span id="currBO"></span>
+								</p>
+								<p id="changeBOPrompt"><b>Change to: </b></p>
+								<input type="text" class="form-control infoElement" id="changeBOInput">
+							</div>
+							<div class="btn-group infoElement" id="pickedBtnGroup">
+								<button type="button" class="btn btn-default" id="okChangeBO" disabled>
+								  <span class="glyphicon glyphicon-ok-circle"></span> OK
+								</button>
+								<button type="button" class="btn btn-default" id="quitChangeBO">
+								  <span class="glyphicon glyphicon-remove-circle"></span> QUIT
+								</button>
+							</div>
+						</div>
+					</div>
+					
+					<!-- 2D canvas -->
+					<div id="twoDContainer" class="row">
+						<canvas id="twoDCanvas"></canvas>
+						<script>
+							var canvas = new fabric.Canvas('twoDCanvas');
+							
+							// resize the canvas to fill browser window dynamically
+						    window.addEventListener('resize', resizeCanvas, false);
+							function resizeCanvas() {
+								$("#pageContent").height("85vh");
+								canvas.setHeight($("#twoDContainer").height());
+					            canvas.setWidth($("#twoDContainer").width());
+								canvas.renderAll();
+						    }
+							resizeCanvas();
+						</script>
+					</div>
+					
+					<!-- 3D Canvas -->
+					<div id="myModal" class="modal fade">
+					    <!-- Modal content-->
+					    <div class="modal-content" id="modal-content">
+							<!-- Close button -->
+					        <button type="button" class="close" id="close" data-dismiss="modal">&times;</button>
+							<!-- The actual canvas -->
+					        <div class="modal-body" id="glCanvas">
+						      	<script>
+									var scene = new THREE.Scene();
+									var container = document.getElementById('modal-content');
+								
+								    const width = 1000;
+								    const height = 640;
+								
+									var aspect = width/height;
+									var camera = new THREE.PerspectiveCamera( 75, aspect, 0.1, 1000 );
+									var renderer = new THREE.WebGLRenderer();
+									renderer.setSize(width, height);
+									document.getElementById("glCanvas").appendChild( renderer.domElement );
+		
+									var group = new THREE.Group();
+								
+									function render() {
+									  requestAnimationFrame( render );
+									  group.rotation.y += 0.01;
+									  renderer.render( scene, camera );
+									}
+
+									render();
+								</script>
+					        </div>
+					    </div>
+					</div>
+				</div>
+				
+				
+				<!-- Here goes the properties side bar -->
+				<div class="col-sm-3 sidebar" id="propSidebar">
+					<!-- The "Properties" Title -->
+					<div class="row" id="propHeader">
+						<h4>Properties</h4>
+					</div>
+					
+					<!-- The actual properties, with formula, neighbors, factor -->
+					<div class="row" id="prop">
+						<span><hr></span>
+						<section id="formula"></section>
+						<section id="factor"></section>
+						<section id="neighbors"></section>
+					</div>
+					
+				</div>
+				
+			</div>
+		</div>
+		
+	</body>
+</html>
+
