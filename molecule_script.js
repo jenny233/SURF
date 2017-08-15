@@ -1292,17 +1292,17 @@ class Atom {
 		}
 		
 		// PHP call to database
-		// $.ajax({
-// 			type: "GET",
-// 			url: "ajax.php",
-// 		    data: {
-// 				 "is_factor_query": true,
-// 			     "json_query": JSON.stringify(query_array)},
-// 			success: function(response){
-// 				$("#factor").html("<h4>Isotopic factor</h4>");
-// 				$("#factor").append(response);
-// 			}
-// 		});
+		$.ajax({
+			type: "GET",
+			url: "ajax.php",
+		    data: {
+				 "is_factor_query": true,
+			     "json_query": JSON.stringify(query_array)},
+			success: function(response){
+				$("#factor").html("<h4>Isotopic factor</h4>");
+				$("#factor").append(response);
+			}
+		});
 	}
 	
 	update_coords() {
