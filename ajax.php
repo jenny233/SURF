@@ -1,5 +1,5 @@
 <?php
-$servername = "107.170.208.38";
+$servername = "localhost";
 $username = "root";
 $password = "surf2017";
 $db = "molecules";
