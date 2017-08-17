@@ -56,20 +56,26 @@ var main = function() {
 		if (value == "atom") {
 			$("#newAtom").removeClass("hidden"); // Turn on newAtom
 			$("#newGroup").addClass("hidden"); // Turn off newGroup
+			$("#newRing").addClass("hidden"); // Turn off newRing
+			$("#bondBtn").prop("disabled", false);
 			
-			if (!pick_two) {
-				$("#bondBtn").prop("disabled", false);
-			}
 		} else if (value == "group") {
 			$("#newGroup").removeClass("hidden");
 			$("#newAtom").addClass("hidden");
-			// Else enable bond pick
-			if (!pick_two) {
-				$("#bondBtn").prop("disabled", false);
-			}
+			$("#newRing").addClass("hidden");
+			$("#bondBtn").prop("disabled", false);
+			
+		} else if (value == "ring") {
+			$("#newRing").removeClass("hidden");
+			$("#newAtom").addClass("hidden");
+			$("#newGroup").addClass("hidden");
+			$("#bondBtn").prop("disabled", false);
+			// Enable pick_two to choose which 1 or 2 atoms to bond to the ring
+			
 		} else {
 			$("#newAtom").addClass("hidden");
 			$("#newGroup").addClass("hidden");
+			$("#newRing").addClass("hidden");
 			$("#bondBtn").prop("disabled", true);
 		}
 		
@@ -104,6 +110,8 @@ var main = function() {
 	$("#threeDBtn").click(function() {
 		// Clear everything
 		scene = new THREE.Scene();
+		
+		// Get the structure of the molecule
 		
 		var sphere = new THREE.SphereGeometry(0.2, 50, 50);
 		var sphere_N = new THREE.SphereGeometry(0.5, 50, 50);

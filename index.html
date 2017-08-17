@@ -81,6 +81,7 @@
 							<option value="default" selected>Select</option>
 							<option value="atom">Atom</option>
 							<option value="group">Functional group</option>
+							<option value="ring">Aromatic ring</option>
 						</select>
 						
 						<label for="boSelect" id="boSelectLabel">Select bond order</label>
@@ -119,6 +120,22 @@
 							<ul id="funcGroupList" class="searchList hidden"></ul>
 						</div>
 						
+						<!-- If "ring" is selected, show the section of rings -->
+						<div id="newRing" class="hidden">
+							<!-- Pick either 1 or 2 atoms to bond to -->
+							<label for="ringSelect" id="ringSelectLabel">Select size of the ring</label>
+							<select class="form-control" id="ringSelect">
+								<option value=3>3 <img src=""></option>
+								<option value=4>4 <img src=""></option>
+								<option value=5>5 <img src=""></option>
+								<option value=6>6 <img src=""></option>
+								<option value=7>7 <img src=""></option>
+								<option value=8>8 <img src=""></option>
+								<option value=-1>Other</option>
+							</select>
+							<input type="text" class="form-control hidden" id="ringInput" placeholder="Enter ring size...">
+							
+						</div>
 						
 					</div>
 					
@@ -145,7 +162,7 @@
 							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Save (not yet implemented)">
 								<button type="button" id="saveMoleculeBtn" class="btn-secondary btn toolbarBtn">
-									<span class="glyphicon glyphicon-floppy-save"></span>
+									<!-- <span class="glyphicon glyphicon-floppy-save"></span> -->
 								</button>
 							</span>
 							<!-- <span data-toggle="tooltip" data-placement="bottom" title="Pick two atoms to bond">

@@ -77,7 +77,7 @@
     background-color: transparent;
     background-position : center center;
 	background-size: 100% 100%;
-	background-image : url("images/3d.png");
+	background-image : url("images/3d_view.png");
 	background-repeat: no-repeat;
 }
 #changeBOBtn:before {
@@ -89,13 +89,25 @@
     background-color: transparent;
     background-position : center center;
 	background-size: 100% 100%;
-	background-image : url("images/pi_bond.png");
+	background-image : url("images/bond.png");
 	background-repeat: no-repeat;
 }
-#saveMoleculeBtn > span {
+/*#saveMoleculeBtn > span {
 	font-size: 20px;
 	vertical-align: middle;
 	top: 0px;
+}*/
+#saveMoleculeBtn:before {
+	content: "";
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/save.png");
+	background-repeat: no-repeat;
 }
 
 
