@@ -125,8 +125,11 @@ var main = function() {
 			for (var a in two_atoms_to_bond) {
 				console.log(two_atoms_to_bond[a].element);
 			}
+			// If there isn't an atom to bond to and the canvas isn't empty
+			
 			// If these two atoms are not directly connected, alert
 			disable_pick_two();
+			$("#pickTwoInfoRow").addClass("hidden");
 			$("#atomOrGroup").val("default");
 			$("#newAtom").addClass("hidden");
 			$("#newGroup").addClass("hidden");
@@ -147,7 +150,7 @@ var main = function() {
 		if (canvas.getActiveObject() && canvas.getActiveObject().text) {
 			// If the active atom is only attached to one thing only
 			if (active_atom.neighbors.length == 0) {
-				fabric_group.remove(active_atom.fabric_atom);
+				fabric_group.removeWithUpdate(active_atom.fabric_atom);
 				canvas.remove(active_atom.fabric_atom);
 				active_atom = null;
 			}else if (active_atom.neighbors.length == 1) {
@@ -159,13 +162,25 @@ var main = function() {
 				index = neighbor.bonds.indexOf(bond);
 				neighbor.bonds.splice(index, 1);
 				neighbor.n_bonds -= bond.order;
-				// TODO: need to update the bond directions for neighbor as well
 				
-				fabric_group.remove(active_atom.fabric_atom);
+				// Update the bond directions for neighbor
+				for (var d in neighbor.bond_dirs) {
+					if (neighbor.bond_dirs[d] == active_atom) {
+						neighbor.bond_dirs[d] = 0;
+						break;
+					}
+				}
+				fabric_group.removeWithUpdate(active_atom.fabric_atom);
 				canvas.remove(active_atom.fabric_atom);
-				fabric_group.remove(bond.fabric_bond);
+				fabric_group.removeWithUpdate(bond.fabric_bond);
 				canvas.remove(bond.fabric_bond);
 				
+				// Reset active objects
+				var allObjects = canvas.getObjects();
+				for (var i = 0; i < allObjects.length; i++) {
+					allObjects[i].set('active', false);
+				}
+				canvas.renderAll();
 				active_atom = null;
 			} else {
 				// No
@@ -177,6 +192,12 @@ var main = function() {
 			$("#eraseAlert").modal();
 		}
 	});
+	
+	/* Center everything */
+	$("#centerBtn").click(function() {
+		// canvas.setActiveObject(fabric_group);
+		center_and_update_coords();
+	})
 	
 	/* Show 3D */
 	$("#threeDBtn").click(function() {
@@ -253,7 +274,6 @@ var main = function() {
 		
 	});
 	
-	
 	/* Change Bond Order */
 	$("#changeBOBtn").click(function() {
 		if (pick_bond) {
@@ -265,7 +285,7 @@ var main = function() {
 	
 	$("#okChangeBO").click(function() {
 		// Remove fabric_bond from canvas
-		fabric_group.remove(bond_to_change.fabric_bond);
+		fabric_group.removeWithUpdate(bond_to_change.fabric_bond);
 		
 		// Replace with a new bond (id is the same)
 		var id = bond_to_change.id; // pos in the bonds array
@@ -344,6 +364,7 @@ var main = function() {
 	
 	$("#quitPickedAtoms").click(function() {
 		disable_pick_two();
+		$("#pickTwoInfoRow").addClass("hidden");
 		$("#atomOrGroup").val("default");
 		$("#newAtom").addClass("hidden");
 		$("#newGroup").addClass("hidden");
@@ -535,14 +556,14 @@ function new_atom_coords(old_atom, distance) {
 	
 	// Simplification: only 8 directions. Separate 360 degrees to 8 sections.
 	// See if old_atom has any bonds in that direction, 0 or 1.
-	var r  = old_atom.bond_dirs["right"];
-	var l  = old_atom.bond_dirs["left"];
-	var t  = old_atom.bond_dirs["top"];
-	var b  = old_atom.bond_dirs["bottom"];
-	var tr = old_atom.bond_dirs["top-right"];
-	var tl = old_atom.bond_dirs["top-left"];
-	var br = old_atom.bond_dirs["bottom-right"];
-	var bl = old_atom.bond_dirs["bottom-left"];
+	var r  = (old_atom.bond_dirs["right"]==0? 0:1);
+	var l  = (old_atom.bond_dirs["left"]==0? 0:1);
+	var t  = (old_atom.bond_dirs["top"]==0? 0:1);
+	var b  = (old_atom.bond_dirs["bottom"]==0? 0:1);
+	var tr = (old_atom.bond_dirs["top-right"]==0? 0:1);
+	var tl = (old_atom.bond_dirs["top-left"]==0? 0:1);
+	var br = (old_atom.bond_dirs["bottom-right"]==0? 0:1);
+	var bl = (old_atom.bond_dirs["bottom-left"]==0? 0:1);
 	// r and l can cancel each other, t and b can cancel each other
 	var r_score = r + tr + br - l - tl - bl;
 	var t_score = t + tr + tl - b - br - bl;
@@ -757,53 +778,53 @@ function create_bond(atom1, atom2, bo) {
 		// left-right
 		if (atom1.rel_left < atom2.rel_left) {
 			console.assert(atom1.bond_dirs["right"]==0, "Cannot bond, right direction occupied.", atom1);
-			atom1.bond_dirs["right"] = 1;
+			atom1.bond_dirs["right"] = atom2;
 			console.assert(atom2.bond_dirs["left"]==0, "Cannot bond, left direction occupied.", atom2);
-			atom2.bond_dirs["left"] = 1;
+			atom2.bond_dirs["left"] = atom1;
 		} else {
 			console.assert(atom1.bond_dirs["left"]==0, "Cannot bond, left direction occupied.", atom1);
-			atom1.bond_dirs["left"] = 1;
+			atom1.bond_dirs["left"] = atom2;
 			console.assert(atom2.bond_dirs["right"]==0, "Cannot bond, right direction occupied.", atom2);
-			atom2.bond_dirs["right"] = 1;
+			atom2.bond_dirs["right"] = atom1;
 		}
 	} else if (angle >= 22.5 && angle < 67.5) {
 		// top left-bottom right
 		if (atom1.rel_left < atom2.rel_left) {
 			console.assert(atom1.bond_dirs["bottom-right"]==0, "Cannot bond, bottom-right direction occupied.", atom1);
-			atom1.bond_dirs["bottom-right"] = 1;
+			atom1.bond_dirs["bottom-right"] = atom2;
 			console.assert(atom2.bond_dirs["top-left"]==0, "Cannot bond, top-left direction occupied.", atom2);
-			atom2.bond_dirs["top-left"] = 1;
+			atom2.bond_dirs["top-left"] = atom1;
 		} else {
 			console.assert(atom1.bond_dirs["top-left"]==0, "Cannot bond, top-left direction occupied.", atom1);
-			atom1.bond_dirs["top-left"] = 1;
+			atom1.bond_dirs["top-left"] = atom2;
 			console.assert(atom2.bond_dirs["bottom-right"]==0, "Cannot bond, bottom-right direction occupied.", atom2);
-			atom2.bond_dirs["bottom-right"] = 1;
+			atom2.bond_dirs["bottom-right"] = atom1;
 		}
 	} else if (angle >= 67.5 && angle <= 90 || angle >= -90 && angle < -67.5) { 
 		// top-bottom
 		if (atom1.rel_top < atom2.rel_top) {
 			console.assert(atom1.bond_dirs["bottom"]==0, "Cannot bond, bottom direction occupied.", atom1);
-			atom1.bond_dirs["bottom"] = 1;
+			atom1.bond_dirs["bottom"] = atom2;
 			console.assert(atom2.bond_dirs["top"]==0, "Cannot bond, top direction occupied.", atom2);
-			atom2.bond_dirs["top"] = 1;
+			atom2.bond_dirs["top"] = atom1;
 		} else {
 			console.assert(atom1.bond_dirs["top"]==0, "Cannot bond, top direction occupied.", atom1);
-			atom1.bond_dirs["top"] = 1;
+			atom1.bond_dirs["top"] = atom2;
 			console.assert(atom2.bond_dirs["bottom"]==0, "Cannot bond, bottom direction occupied.", atom2);
-			atom2.bond_dirs["bottom"] = 1;
+			atom2.bond_dirs["bottom"] = atom1;
 		}
 	} else if (angle >= -67.5 && angle < -22.5) {
 		// top right-bottom left
 		if (atom1.rel_left < atom2.rel_left) {
 			console.assert(atom1.bond_dirs["top-right"]==0, "Cannot bond, top-right direction occupied.", atom1);
-			atom1.bond_dirs["top-right"] = 1;
+			atom1.bond_dirs["top-right"] = atom2;
 			console.assert(atom2.bond_dirs["bottom-left"]==0, "Cannot bond, bottom-left direction occupied.", atom2);
-			atom2.bond_dirs["bottom-left"] = 1;
+			atom2.bond_dirs["bottom-left"] = atom1;
 		} else {
 			console.assert(atom1.bond_dirs["bottom-left"]==0, "Cannot bond, bottom-left direction occupied.", atom1);
-			atom1.bond_dirs["bottom-left"] = 1;
+			atom1.bond_dirs["bottom-left"] = atom2;
 			console.assert(atom2.bond_dirs["top-right"]==0, "Cannot bond, top-right direction occupied.", atom2);
-			atom2.bond_dirs["top-right"] = 1;
+			atom2.bond_dirs["top-right"] = atom1;
 		}
 	}
 	
@@ -1214,7 +1235,6 @@ class Atom {
 		this.neighbors = [];
 		this.bonds = [];
 		this.n_bonds = 0; // Total # bonds (accounting double & triple)
-		this.n_H = 0;     // Number of H's bonded to the atom
 		this.bond_dirs = {
 			"right"  : 0,
 			"left"   : 0,

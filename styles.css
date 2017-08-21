@@ -133,7 +133,18 @@
 	background-image : url("images/erase.png");
 	background-repeat: no-repeat;
 }
-
+#centerBtn:before {
+	content: "";
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/center.png");
+	background-repeat: no-repeat;
+}
 
 /* 2-D container & canvas */
 #twoDContainer {
