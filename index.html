@@ -125,12 +125,10 @@
 							<!-- Pick either 1 or 2 atoms to bond to -->
 							<label for="ringSelect" id="ringSelectLabel">Select size of the ring</label>
 							<select class="form-control" id="ringSelect">
-								<option value=3>3 <img src=""></option>
 								<option value=4>4 <img src=""></option>
 								<option value=5>5 <img src=""></option>
-								<option value=6>6 <img src=""></option>
+								<option value=6 selected>6 <img src=""></option>
 								<option value=7>7 <img src=""></option>
-								<option value=8>8 <img src=""></option>
 								<option value=-1>Other</option>
 							</select>
 							<input type="text" class="form-control hidden" id="ringInput" placeholder="Enter ring size...">
@@ -142,8 +140,23 @@
 					<div>
 						<!-- The "Bond" button -->
 						<button id="bondBtn" class="btn btn-primary">Bond!</button>
-						<!-- The "Clear" button -->
-						<button id="clearBtn" class="btn btn-primary">Clear</button>
+						
+						<div class="modal fade" id="bondBtnAlert">
+						  <div class="modal-dialog" role="document">
+						    <div class="modal-content">
+						      <div class="modal-header">
+						        <h5 class="modal-title">Note</h5>
+						        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						          <span aria-hidden="true">&times;</span>
+						        </button>
+						      </div>
+						      <div class="modal-body">
+						        <p></p>
+						      </div>
+						    </div>
+						  </div>
+						</div>
+						
 					</div>
 				</div>
 				
@@ -155,15 +168,19 @@
 					<div id="topToolbar" class="row">
 						<div class="btn-toolbar btn-group row" id="toolbarBtnGroup">
 							<span data-toggle="tooltip" data-placement="bottom" title="3D View (NH3 only currently)">
-								<button type="button" id="threeDBtn" class="btn-secondary btn toolbarBtn" data-toggle="modal" data-target="#myModal"></button>
+								<button type="button" id="threeDBtn" class="btn toolbarBtn" data-toggle="modal" data-target="#myModal"></button>
 							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Change bond order">
-								<button type="button" id="changeBOBtn" class="btn-secondary btn toolbarBtn"></button>
+								<button type="button" id="changeBOBtn" class="btn toolbarBtn"></button>
 							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Save (not yet implemented)">
-								<button type="button" id="saveMoleculeBtn" class="btn-secondary btn toolbarBtn">
-									<!-- <span class="glyphicon glyphicon-floppy-save"></span> -->
-								</button>
+								<button type="button" id="saveMoleculeBtn" class="btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Clear all">
+								<button type="button" id="clearBtn" class="btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Erase one atom">
+								<button type="button" id="eraseBtn" class="btn toolbarBtn"></button>
 							</span>
 							<!-- <span data-toggle="tooltip" data-placement="bottom" title="Pick two atoms to bond">
 								<button type="button" id="pickTwoBtn" class="btn-secondary btn toolbarBtn"></button>
@@ -172,32 +189,20 @@
 								<button type="button" id="toggleHBtn" class="btn-secondary btn toolbarBtn"></button>
 							</span> -->
 						</div>
-					
-						<div class="hidden infoRow" id="pickTwoInfoRow">
-							<p id="pickTwoInfo" class="infoElement"></p>
-							<div class="btn-group infoElement" id="pickedBtnGroup">
-								<button type="button" class="btn btn-default" id="okPickedAtoms" disabled>
-								  <span class="glyphicon glyphicon-ok-circle"></span> OK
-								</button>
-								<button type="button" class="btn btn-default" id="quitPickedAtoms">
-								  <span class="glyphicon glyphicon-remove-circle"></span> QUIT
-								</button>
-							</div>
-						</div>
 						
 						<div id="changeBOInfoRow" class="hidden infoRow" >
 							<div id="tooltipBOChange" class="infoElement hidden">
-								<p><b>Click on a bond to see or change its bond order</b></p>
+								<p><b><u><i>Click on a bond to see or change its bond order</i></u></b></p>
 							</div>
 							<div id="makeBOChange" class="infoElement hidden">
 								<p>
-									<b>Current bond order: </b>
+									<b><u><i>Current bond order: </i></u></b>
 									<span id="currBO"></span>
 								</p>
 								<p id="changeBOPrompt"><b>Change to: </b></p>
 								<input type="text" class="form-control infoElement" id="changeBOInput">
 							</div>
-							<div class="btn-group infoElement" id="pickedBtnGroup">
+							<div class="btn-group infoElement okQuitBtns">
 								<button type="button" class="btn btn-default" id="okChangeBO" disabled>
 								  <span class="glyphicon glyphicon-ok-circle"></span> OK
 								</button>
@@ -206,7 +211,41 @@
 								</button>
 							</div>
 						</div>
+						
+						<div id="pickTwoInfoRow" class="infoRow hidden">
+							<p><b><u><i>
+								Click on 1 or 2 atoms on the canvas as the ring's basis!
+								<!-- <span class="glyphicon glyphicon-arrow-right"></span> -->
+							</i></u></b></p>
+							<p class="infoElement">
+								<b><i>Or...&ensp;</i></b>
+							</p>
+							<div class="btn-group infoElement okQuitBtns">
+								<button type="button" class="btn btn-default" id="quitPickedAtoms">
+								  <span class="glyphicon glyphicon-remove-circle"></span> QUIT to see properties
+								</button>
+							</div>
+						</div>
+						
+						<div class="modal fade" id="eraseAlert">
+						  <div class="modal-dialog" role="document">
+						    <div class="modal-content">
+						      <div class="modal-header">
+						        <h5 class="modal-title">Note</h5>
+						        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						          <span aria-hidden="true">&times;</span>
+						        </button>
+						      </div>
+						      <div class="modal-body">
+						        <p></p>
+						      </div>
+						    </div>
+						  </div>
+						</div>
+						
 					</div>
+					
+					
 					
 					<!-- 2D canvas -->
 					<div id="twoDContainer" class="row">
@@ -217,7 +256,7 @@
 							// resize the canvas to fill browser window dynamically
 						    window.addEventListener('resize', resizeCanvas, false);
 							function resizeCanvas() {
-								$("#pageContent").height("85vh");
+								$("#pageContent").height("80vh");
 								canvas.setHeight($("#twoDContainer").height());
 					            canvas.setWidth($("#twoDContainer").width());
 								canvas.renderAll();

@@ -57,12 +57,14 @@ var main = function() {
 			$("#newAtom").removeClass("hidden"); // Turn on newAtom
 			$("#newGroup").addClass("hidden"); // Turn off newGroup
 			$("#newRing").addClass("hidden"); // Turn off newRing
+			disable_pick_two();
 			$("#bondBtn").prop("disabled", false);
 			
 		} else if (value == "group") {
 			$("#newGroup").removeClass("hidden");
 			$("#newAtom").addClass("hidden");
 			$("#newRing").addClass("hidden");
+			disable_pick_two();
 			$("#bondBtn").prop("disabled", false);
 			
 		} else if (value == "ring") {
@@ -71,11 +73,21 @@ var main = function() {
 			$("#newGroup").addClass("hidden");
 			$("#bondBtn").prop("disabled", false);
 			// Enable pick_two to choose which 1 or 2 atoms to bond to the ring
-			
+			// If there is nothing on the canvas, create new ring
+			// If there is something, need to pick 1 or 2 atoms to bond to
+			// Prompt to pick atoms
+			if (atoms.length > 0) {
+				$("#pickTwoInfoRow").removeClass("hidden");
+				// Enable pick two
+				enable_pick_two();
+			} else {
+				$("#pickTwoInfoRow").addClass("hidden");
+			}
 		} else {
 			$("#newAtom").addClass("hidden");
 			$("#newGroup").addClass("hidden");
 			$("#newRing").addClass("hidden");
+			disable_pick_two();
 			$("#bondBtn").prop("disabled", true);
 		}
 		
@@ -92,18 +104,78 @@ var main = function() {
 		}
 	});
 	
+	/* User selects the ring size */
+	$("#ringSelect").change(function() {
+		var value = parseInt($("#ringSelect").val());
+		// if "other" is selected, enable the text box.
+		if (value < 0) {
+			$("#ringInput").removeClass("hidden");
+		} else {
+			$("#ringInput").addClass("hidden");
+		}
+	})
+	
 	/* Create! */
     $("#bondBtn").click(function() {
 		if (new_element == "atom") {
 			add_new_atom_to_canvas();
 		} else if (new_element == "group") {
 			add_new_group_to_canvas(func_group_name);
+		} else if (new_element == "ring") {
+			for (var a in two_atoms_to_bond) {
+				console.log(two_atoms_to_bond[a].element);
+			}
+			// If these two atoms are not directly connected, alert
+			disable_pick_two();
+			$("#atomOrGroup").val("default");
+			$("#newAtom").addClass("hidden");
+			$("#newGroup").addClass("hidden");
+			$("#newRing").addClass("hidden");
+			$("#bondBtn").prop("disabled", true);
+			
 		}
     });
 	
 	/* Clear all */
 	$("#clearBtn").click(function() {
 		reset_all();
+	});
+	
+	/* Erase something */
+	$("#eraseBtn").click(function() {
+		// Check if there is any active atom selected
+		if (canvas.getActiveObject() && canvas.getActiveObject().text) {
+			// If the active atom is only attached to one thing only
+			if (active_atom.neighbors.length == 0) {
+				fabric_group.remove(active_atom.fabric_atom);
+				canvas.remove(active_atom.fabric_atom);
+				active_atom = null;
+			}else if (active_atom.neighbors.length == 1) {
+				// Yes
+				var neighbor = active_atom.neighbors[0];
+				var bond = active_atom.bonds[0];
+				var index = neighbor.neighbors.indexOf(active_atom);
+				neighbor.neighbors.splice(index, 1);
+				index = neighbor.bonds.indexOf(bond);
+				neighbor.bonds.splice(index, 1);
+				neighbor.n_bonds -= bond.order;
+				// TODO: need to update the bond directions for neighbor as well
+				
+				fabric_group.remove(active_atom.fabric_atom);
+				canvas.remove(active_atom.fabric_atom);
+				fabric_group.remove(bond.fabric_bond);
+				canvas.remove(bond.fabric_bond);
+				
+				active_atom = null;
+			} else {
+				// No
+				$("#eraseAlert").find("p").html("Only atoms bonded to one other atom can be erased.");
+				$("#eraseAlert").modal();
+			}
+		} else {
+			$("#eraseAlert").find("p").html("Plase first select an atom to erase.\n(The atom can only be bonded to one other atom.)");
+			$("#eraseAlert").modal();
+		}
 	});
 	
 	/* Show 3D */
@@ -237,13 +309,13 @@ var main = function() {
 	
 	
 	/* Pick two atoms */
-	$("#pickTwoBtn").click(function() {
-		if (pick_two) {          // If it is already in pick_two mode
-			disable_pick_two();
-		} else {                 // If clicked to enable pick_two mode
-			enable_pick_two();
-		}
-	});
+	// $("#pickTwoBtn").click(function() {
+// 		if (pick_two) {          // If it is already in pick_two mode
+// 			disable_pick_two();
+// 		} else {                 // If clicked to enable pick_two mode
+// 			enable_pick_two();
+// 		}
+// 	});
 	
 	$("#okPickedAtoms").click(function() {
 		var start = two_atoms_to_bond[0];
@@ -272,6 +344,12 @@ var main = function() {
 	
 	$("#quitPickedAtoms").click(function() {
 		disable_pick_two();
+		$("#atomOrGroup").val("default");
+		$("#newAtom").addClass("hidden");
+		$("#newGroup").addClass("hidden");
+		$("#newRing").addClass("hidden");
+		
+		$("#bondBtn").prop("disabled", true);
 	});
 	
 
@@ -315,7 +393,6 @@ var main = function() {
 		// Get the structure of this molecule
 		var f_name = text.substr(0,text.indexOf(" -- "));
 		var structure = molecules[f_name];
-		console.log(structure["common_name"], structure["n_atoms"]);
 		
 		for (var i=0; i<structure["n_atoms"]; i++) {
 			var atom_info = structure["atoms"][i];
@@ -389,6 +466,8 @@ function reset_all() {
 	
 	// Left selection sidebar
 	$("#searchMolecule").val("");
+	
+	$("#pickTwoInfoRow").addClass("hidden"); // For the ring
 	
 	$("#bondBtn").html("Add to canvas!");
 	$("#boSelect").addClass("hidden");
@@ -773,12 +852,12 @@ function add_new_atom_to_canvas() {
 	// Add the bond to the group and canvas and center everything
 	if (atoms.length == 0) {
 		var a = create_atom(element, 0, 0);
-		active_atom = a;
 		add_to_fabric_group(a.fabric_atom);
 		center_and_update_coords();
 	} else {
 		if (!active_atom) {
-			alert("Please select an atom to bond to");
+			$("#bondBtnAlert").find("p").html("Please select an atom to bond to");
+			$("#bondBtnAlert").modal();
 			return;
 		}
 		var old_atom = active_atom;
@@ -993,18 +1072,18 @@ function search_func_group(search_text) {
 /* Toolbar - Enable the pick two atoms to bond function. */
 function enable_pick_two() {
 	pick_two = true;
-	$("#pickTwoInfoRow").removeClass("hidden");
-	resizeCanvas();
-	display_atoms_to_bond();
+	// $("#pickTwoInfoRow").removeClass("hidden");
+	// resizeCanvas();
+	// display_atoms_to_bond();
 	// Disable adding new atoms
-	$("#bondBtn").prop("disabled", true);
+	// $("#bondBtn").prop("disabled", true);
 }
 
 /* Toolbar - Disable the pick two atoms to bond function. */
 function disable_pick_two() {
 	pick_two = false;
-	$("#pickTwoInfoRow").addClass("hidden");
-	resizeCanvas();
+	// $("#pickTwoInfoRow").addClass("hidden");
+	// resizeCanvas();
 	while (two_atoms_to_bond.length > 0) {
 		var a = two_atoms_to_bond.shift();
 		a.fabric_atom.fontWeight = "normal";
@@ -1012,13 +1091,13 @@ function disable_pick_two() {
 	}
 	canvas.renderAll();
 	// Enable adding new atoms
-	$("#bondBtn").prop("disabled", false);
+	// $("#bondBtn").prop("disabled", false);
 }
 
 /* Toolbar - Display the existing atoms picked by the user to bond. */
 function display_atoms_to_bond() {
 	if (two_atoms_to_bond.length == 0) {
-		$("#pickTwoInfo").html("<b>Click on two atoms to bond to form an aromatic ring</b>");
+		$("#pickTwoInfo").html("<b>Click on 1 or 2 atoms as the base of an aromatic ring</b>");
 	} else {
 		$("#pickTwoInfo").html("<b>Atoms picked:</b> ");
 		for (var i=0; i<two_atoms_to_bond.length; i++) {

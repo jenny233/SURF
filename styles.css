@@ -60,12 +60,12 @@
 	display: inline-block;
 	max-width: 100px;
 }
-#pickedBtnGroup {
+.okQuitBtns {
 	position: absolute;
 	right: 0px;
 	bottom: 0px;
 }
-#pickedBtnGroup > button {
+.okQuitBtns > button {
 	border: 0;
 }
 #threeDBtn:before {
@@ -107,6 +107,30 @@
     background-position : center center;
 	background-size: 100% 100%;
 	background-image : url("images/save.png");
+	background-repeat: no-repeat;
+}
+#clearBtn:before {
+	content: "";
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/clear.png");
+	background-repeat: no-repeat;
+}
+#eraseBtn:before {
+	content: "";
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/erase.png");
 	background-repeat: no-repeat;
 }
 
@@ -233,7 +257,9 @@ label.sectionLabel {
 	margin-bottom: 15px;
 	display: inline-block;
 }
-
+#quitPickedAtoms {
+	padding: 5px;
+}
 #bondBtn {
 	margin-top: 20px;
 	margin-right: 20px;
