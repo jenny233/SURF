@@ -441,10 +441,43 @@ var main = function() {
 	// NEW_ATOM BECAUSE THE OTHER ONE WOULD BE LOST
 	$("#turnAtomLeft").click(function() {
 		if (atom_picked) {
-			// New atom and bond
-			var theta = -Math.PI/4; // -45 degrees
-			
 			var n = atom_picked.neighbors[0];
+			var d = $("#currPos").html();
+			if (n.bond_dirs[d] == atom_picked) {
+				n.bond_dirs[d] = 0;
+			}
+			
+			// Turn to the nearest empty spot
+			var count = 0; // we don't want an infinite loop
+			var theta = 0; // degrees we turn by
+			do {
+				count++;
+				theta += -Math.PI/4;
+				if (d == "right") {
+					d = "top-right";
+				} else if (d == "top-right") {
+					d = "top";
+				} else if (d == "top") {
+					d = "top-left";
+				} else if (d == "top-left") {
+					d = "left";
+				} else if (d == "left") {
+					d = "bottom-left";
+				} else if (d == "bottom-left") {
+					d = "bottom";
+				} else if (d == "bottom"){
+					d = "bottom-right";
+				} else if (d == "bottom-right") {
+					d = "right";
+				}
+			} while (n.bond_dirs[d] != 0 && count < 8)
+			
+			// If all the spots are filled
+			if (count == 8) {
+				return;
+			}
+			
+			
 			var x = atom_picked.abs_left - n.abs_left;
 			var y = atom_picked.abs_top  - n.abs_top;
 			
@@ -486,9 +519,6 @@ var main = function() {
 			adjust_frame_zoom(new_atom);
 			
 
-			// Update the bond directions for neighbor
-			var d = $("#currPos").html();
-			n.bond_dirs[d] = 0;
 			
 			// Reset active objects
 			var allObjects = canvas.getObjects();
@@ -498,6 +528,7 @@ var main = function() {
 			canvas.renderAll();
 			atom_picked = new_atom;
 			display_atom_to_move();
+
 		}
 	});
 	$("#quitChangePos").click(function() {
@@ -1190,7 +1221,7 @@ function search_molecule(search_text) {
 		
 		var common_name = molecules[formula_key]["common_name"];
 		
-		if (formula_key.indexOf(search_text) >= 0 ||
+		if (formula_key.toUpperCase().indexOf(search_text) >= 0 ||
 	        common_name.toUpperCase().indexOf(search_text) >= 0) {
 				
 				if (molecules[formula_key]["format"] != "full" &&
