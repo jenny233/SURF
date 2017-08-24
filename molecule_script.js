@@ -11,30 +11,27 @@ var formula_dict = {};
 var formula = "";
 var molecules = {};
 var func_groups = {};
-
 // getBond[atom1.id][atom2.id] gives a Bond
 // Careful! Need "getBond[atom.id] = {}" everytime a new Atom is created.
 var getBond = {};
 
-// Active atom to display properties
-var active_atom;
+var active_atom; // Active atom to display properties
 
-// The group that is always centered on canvas
-var fabric_group;
+var fabric_group; // The group that is always centered on canvas
 
-// Hide or show hydrogens
-var H_hidden = false;
-
-// Pick two atoms to bond mode on/off
-var pick_two = false;
+var pick_ring_base = false; // Pick two atoms for the ring
 var two_atoms_to_bond = [];
 
-// Pick a bond to change bond order
-var pick_bond = false;
+var pick_bond = false; // Pick a bond to change bond order
 var bond_to_change;
 
-var new_element = "";
-var func_group_name = "";
+var pick_atom_to_erase = false;  // Pick one atom to erase
+var pick_atom_to_change = false; // Or change its element
+var pick_atom_to_move = false;   // Or move
+var atom_picked;
+
+var new_element = ""; // "atom" or "group" or "ring"
+var func_group_name = ""; // Name of a new functional group
 
 
 /*========================= MAIN FUNCTION ================================*/
@@ -45,11 +42,9 @@ var main = function() {
 	
 	$('[data-toggle="tooltip"]').tooltip(); 
 	
-	$("#atomOrGroup").val("default");
-	$("elementSelect").val("default");
-	$("boSelect").val("default");
 	
-	/* User picks atom or functional group */
+	
+	/* Left - User picks atom or functional group or ring */
 	$("#atomOrGroup").change(function(){
 		var value = $("#atomOrGroup").val();
 		new_element = value;
@@ -57,14 +52,14 @@ var main = function() {
 			$("#newAtom").removeClass("hidden"); // Turn on newAtom
 			$("#newGroup").addClass("hidden"); // Turn off newGroup
 			$("#newRing").addClass("hidden"); // Turn off newRing
-			disable_pick_two();
+			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", false);
 			
 		} else if (value == "group") {
 			$("#newGroup").removeClass("hidden");
 			$("#newAtom").addClass("hidden");
 			$("#newRing").addClass("hidden");
-			disable_pick_two();
+			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", false);
 			
 		} else if (value == "ring") {
@@ -72,14 +67,14 @@ var main = function() {
 			$("#newAtom").addClass("hidden");
 			$("#newGroup").addClass("hidden");
 			$("#bondBtn").prop("disabled", false);
-			// Enable pick_two to choose which 1 or 2 atoms to bond to the ring
+			// Enable pick_ring_base to choose which 1 or 2 atoms to bond to the ring
 			// If there is nothing on the canvas, create new ring
 			// If there is something, need to pick 1 or 2 atoms to bond to
 			// Prompt to pick atoms
 			if (atoms.length > 0) {
 				$("#pickTwoInfoRow").removeClass("hidden");
-				// Enable pick two
-				enable_pick_two();
+				// Enable pick_ring_base
+				enable_pick_ring_base();
 			} else {
 				$("#pickTwoInfoRow").addClass("hidden");
 			}
@@ -87,13 +82,13 @@ var main = function() {
 			$("#newAtom").addClass("hidden");
 			$("#newGroup").addClass("hidden");
 			$("#newRing").addClass("hidden");
-			disable_pick_two();
+			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", true);
 		}
 		
 	});
 	
-	/* User selects the bond order */
+	/* Left - User selects the bond order */
 	$("#boSelect").change(function(){
 		var value = parseFloat($("#boSelect").val());
 		// if "other" is selected, enable the text box.
@@ -104,7 +99,7 @@ var main = function() {
 		}
 	});
 	
-	/* User selects the ring size */
+	/* Left - User selects the ring size */
 	$("#ringSelect").change(function() {
 		var value = parseInt($("#ringSelect").val());
 		// if "other" is selected, enable the text box.
@@ -115,7 +110,7 @@ var main = function() {
 		}
 	})
 	
-	/* Create! */
+	/* Left - Bond button! */
     $("#bondBtn").click(function() {
 		if (new_element == "atom") {
 			add_new_atom_to_canvas();
@@ -128,7 +123,7 @@ var main = function() {
 			// If there isn't an atom to bond to and the canvas isn't empty
 			
 			// If these two atoms are not directly connected, alert
-			disable_pick_two();
+			disable_pick_ring_base();
 			$("#pickTwoInfoRow").addClass("hidden");
 			$("#atomOrGroup").val("default");
 			$("#newAtom").addClass("hidden");
@@ -139,67 +134,108 @@ var main = function() {
 		}
     });
 	
-	/* Clear all */
+	/* Left - Search molecule bar, show choices */
+	$("#searchMolecule").focusin(function() {
+		if ($("#searchMolecule").val() != "") {
+			$("#moleculeList").removeClass("hidden");
+		}
+	});
+	$("#searchMolecule").focusout(function() {
+	    setTimeout(function() {
+	        $("#moleculeList").addClass("hidden");
+	    }, 200);
+	});	
+	
+	/* Left - Search functional group bar, show choices */
+	$("#searchFuncGroup").focusin(function() {
+		if ($("#searchFuncGroup").val() != "") {
+			$("#funcGroupList").removeClass("hidden");
+		}
+	});
+	$("#searchFuncGroup").focusout(function() {
+	    setTimeout(function() {
+	        $("#funcGroupList").addClass("hidden");
+	    }, 200);
+	});	
+	
+	/* Left - An imported molecule is clicked */
+	$("#moleculeList").on("click", "li", function() {
+		
+		// If there already exists atoms, ask if user wants to clear the screen
+		if (atoms.length > 0) {
+			$("#alertModal").find("p").html("The canvas needs to be cleared before importing a new molecule.");
+			$("#alertModal").modal();
+			return;
+		}
+		
+		var text = $(this).text();
+		$("#searchMolecule").val(text);
+		
+		// Get the structure of this molecule
+		var f_name = text.substr(0,text.indexOf(" -- "));
+		var structure = molecules[f_name];
+		
+		for (var i=0; i<structure["n_atoms"]; i++) {
+			var atom_info = structure["atoms"][i];
+			var newAtom = create_atom(
+				atom_info["element"],
+				atom_info["x_2d"] * M,
+				atom_info["y_2d"] * M
+			);
+		}
+		
+		for (var i=0; i<structure["n_atoms"]; i++) {
+			var atom_info = structure["atoms"][i];
+			for (var j=0; j<atom_info["neighbors"].length; j++) {
+				var n = atom_info["neighbors"][j];
+				var newBond = create_bond(atoms[i], atoms[n], atom_info["bos"][j]);
+			}
+		}
+		
+		for (var i in atoms) {
+			add_to_fabric_group(atoms[i].fabric_atom);
+		}
+		for (var i in bonds) {
+			add_to_fabric_group(bonds[i].fabric_bond);
+		}
+		
+		center_and_update_coords();
+		
+		for (var a in atoms) {
+			adjust_frame_zoom(atoms[a]);
+		}
+		
+		var allObjects = canvas.getObjects();
+		for (var i = 0; i < allObjects.length; i++) {
+			allObjects[i].set('active', false);
+		}
+		canvas.renderAll();
+	});
+	
+	/* Left - An imported functional group is clicked */
+	$("#funcGroupList").on("click", "li", function() {
+		
+		var text = $(this).text();
+		$("#searchFuncGroup").val(text);
+		// Get the structure of this molecule
+		func_group_name = text.substr(0,text.indexOf(" -- "));
+		// add_new_group_to_canvas(common_name);
+		
+	});
+	
+	
+	
+	/* Top - Clear all */
 	$("#clearBtn").click(function() {
 		reset_all();
 	});
 	
-	/* Erase something */
-	$("#eraseBtn").click(function() {
-		// Check if there is any active atom selected
-		if (canvas.getActiveObject() && canvas.getActiveObject().text) {
-			// If the active atom is only attached to one thing only
-			if (active_atom.neighbors.length == 0) {
-				fabric_group.removeWithUpdate(active_atom.fabric_atom);
-				canvas.remove(active_atom.fabric_atom);
-				active_atom = null;
-			}else if (active_atom.neighbors.length == 1) {
-				// Yes
-				var neighbor = active_atom.neighbors[0];
-				var bond = active_atom.bonds[0];
-				var index = neighbor.neighbors.indexOf(active_atom);
-				neighbor.neighbors.splice(index, 1);
-				index = neighbor.bonds.indexOf(bond);
-				neighbor.bonds.splice(index, 1);
-				neighbor.n_bonds -= bond.order;
-				
-				// Update the bond directions for neighbor
-				for (var d in neighbor.bond_dirs) {
-					if (neighbor.bond_dirs[d] == active_atom) {
-						neighbor.bond_dirs[d] = 0;
-						break;
-					}
-				}
-				fabric_group.removeWithUpdate(active_atom.fabric_atom);
-				canvas.remove(active_atom.fabric_atom);
-				fabric_group.removeWithUpdate(bond.fabric_bond);
-				canvas.remove(bond.fabric_bond);
-				
-				// Reset active objects
-				var allObjects = canvas.getObjects();
-				for (var i = 0; i < allObjects.length; i++) {
-					allObjects[i].set('active', false);
-				}
-				canvas.renderAll();
-				active_atom = null;
-			} else {
-				// No
-				$("#eraseAlert").find("p").html("Only atoms bonded to one other atom can be erased.");
-				$("#eraseAlert").modal();
-			}
-		} else {
-			$("#eraseAlert").find("p").html("Plase first select an atom to erase.\n(The atom can only be bonded to one other atom.)");
-			$("#eraseAlert").modal();
-		}
-	});
-	
-	/* Center everything */
+	/* Top - Center everything */
 	$("#centerBtn").click(function() {
-		// canvas.setActiveObject(fabric_group);
 		center_and_update_coords();
 	})
 	
-	/* Show 3D */
+	/* Top - Show 3D */
 	$("#threeDBtn").click(function() {
 		// Clear everything
 		scene = new THREE.Scene();
@@ -274,7 +310,201 @@ var main = function() {
 		
 	});
 	
-	/* Change Bond Order */
+	/* Top - Erase an atom */
+	$("#eraseBtn").click(function() {
+		if (pick_atom_to_erase) {
+			disable_pick_atom_to_erase();
+		} else {
+			enable_pick_atom_to_erase();
+		}
+	});
+	$("#okErase").click(function() {
+		// Check if there is any atom selected
+		if (atom_picked) {
+			// If the atom is not bonded to anything
+			if (atom_picked.neighbors.length == 0) {
+				formula_dict[atom_picked.element]--;
+				fabric_group.removeWithUpdate(atom_picked.fabric_atom);
+				canvas.remove(atom_picked.fabric_atom);
+				atom_picked = null;
+				
+				display_atom_to_erase();
+				center_and_update_coords();
+			}
+			// If the atom is only attached to one thing only
+			else if (atom_picked.neighbors.length == 1) {
+				formula_dict[atom_picked.element]--;
+				var neighbor = atom_picked.neighbors[0];
+				var bond = atom_picked.bonds[0];
+				var index = neighbor.neighbors.indexOf(atom_picked);
+				neighbor.neighbors.splice(index, 1);
+				index = neighbor.bonds.indexOf(bond);
+				neighbor.bonds.splice(index, 1);
+				neighbor.n_bonds -= bond.order;
+				
+				// Update the bond directions for neighbor
+				for (var d in neighbor.bond_dirs) {
+					if (neighbor.bond_dirs[d] == atom_picked) {
+						neighbor.bond_dirs[d] = 0;
+						break;
+					}
+				}
+				fabric_group.removeWithUpdate(atom_picked.fabric_atom);
+				canvas.remove(atom_picked.fabric_atom);
+				fabric_group.removeWithUpdate(bond.fabric_bond);
+				canvas.remove(bond.fabric_bond);
+				
+				// Reset active objects
+				var allObjects = canvas.getObjects();
+				for (var i = 0; i < allObjects.length; i++) {
+					allObjects[i].set('active', false);
+				}
+				canvas.renderAll();
+				atom_picked = null;
+				
+				display_atom_to_erase();
+				center_and_update_coords();
+			}
+			// If the atom is bonded to too many atoms
+			else {
+				$("#alertModal").find("p").html("Only atoms bonded to one other atom can be erased.");
+				$("#alertModal").modal();
+			}
+		} else {
+			$("#alertModal").find("p").html("Plase first select an atom to erase.\n(The atom can only be bonded to one other atom.)");
+			$("#alertModal").modal();
+		}
+		
+	});
+	$("#quitErase").click(function() {
+		disable_pick_atom_to_erase();
+	});
+	
+	/* Top - Change an atom */
+	$("#changeAtomBtn").click(function() {
+		if (pick_atom_to_change) {
+			disable_pick_atom_to_change();
+		} else {
+			enable_pick_atom_to_change();
+		}
+	});
+	$("#okChangeAtom").click(function() {
+		var new_element = $("#changeAtomInput").val().trim();
+		// Make sure new_element satisfies the capitalization of elements
+		if (new_element.length == 1) {
+			new_element = new_element.toUpperCase();
+		} else if (new_element.length == 2) {
+			new_element = new_element.charAt(0).toUpperCase() + new_element.charAt(1).toLowerCase();
+		} else {
+			$("#alertModal").find("p").html("The input element is not valid.");
+			$("#alertModal").modal();
+			return;
+		}
+		// Change the element
+		formula_dict[atom_picked.element]--;
+		atom_picked.element = new_element;
+		if (formula_dict[new_element]) {
+			formula_dict[new_element]++;
+		} else {
+			formula_dict[new_element] = 1;
+		}
+		atom_picked.fabric_atom.text = new_element;
+		atom_picked.fabric_atom.fontWeight = "normal";
+		atom_picked.fabric_atom.setColor("black");
+		
+		// Reset active objects
+		var allObjects = canvas.getObjects();
+		if (active_atom) {
+			active_atom.fabric_atom.set('active', true);
+			active_atom.get_properties();
+		}
+		canvas.renderAll();
+		atom_picked = null;
+		
+		display_atom_to_change();
+	});
+	$("#quitChangeAtom").click(function() {
+		disable_pick_atom_to_change();
+	});
+	
+	/* Top - Change an atom's position */
+	$("#changePosBtn").click(function() {
+		if (pick_atom_to_move) {
+			disable_pick_atom_to_move();
+		} else {
+			enable_pick_atom_to_move();
+		}
+	});
+	
+	// TODO: HAVE TO BE ABLE TO USE DROP DOWN MENU TO SELECT DIRECTION
+	// WHAT IF IT CONFLICTS WITH EXISTING ATOM? CAN'T JUST CHANGE THE DIR TO
+	// NEW_ATOM BECAUSE THE OTHER ONE WOULD BE LOST
+	$("#turnAtomLeft").click(function() {
+		if (atom_picked) {
+			// New atom and bond
+			var theta = -Math.PI/4; // -45 degrees
+			
+			var n = atom_picked.neighbors[0];
+			var x = atom_picked.abs_left - n.abs_left;
+			var y = atom_picked.abs_top  - n.abs_top;
+			
+			// Rotate by theta, create new atom
+			var new_x = x * Math.cos(theta) - y * Math.sin(theta) + n.abs_left;
+			var new_y = y * Math.cos(theta) + x * Math.sin(theta) + n.abs_top;
+			var new_atom = create_atom(atom_picked.element, new_x, new_y, atom_picked.id);
+			new_atom.fabric_atom.fontWeight = "bold";
+			new_atom.fabric_atom.setColor("#d3349e");
+			new_atom.rel_left = new_atom.abs_left - fabric_group.left;
+			new_atom.rel_top  = new_atom.abs_top  - fabric_group.top;
+			
+			// Bond new atom and the neighbor
+			var b = atom_picked.bonds[0];
+			var new_bond = create_bond(new_atom, n, b.order, b.id);
+			new_bond.update_coords();
+			
+			// Get rid of the atom & bond pushed onto n.neighbors and n.bonds
+			// due to the create_bond() function. We need them at the correct
+			// place.
+			n.neighbors.pop();
+			n.bonds.pop();
+			var index = n.neighbors.indexOf(atom_picked);
+			n.neighbors[index] = new_atom;
+			index = n.bonds.indexOf(b);
+			n.bonds[index] = new_bond;
+
+			// Take old atom and old bond off of canvas
+			fabric_group.removeWithUpdate(atom_picked.fabric_atom);
+			canvas.remove(atom_picked.fabric_atom);
+			fabric_group.removeWithUpdate(b.fabric_bond);
+			canvas.remove(b.fabric_bond);
+			
+			// Add new atom and new bond onto canvas
+			add_to_fabric_group(new_atom.fabric_atom);
+			add_to_fabric_group(new_bond.fabric_bond);
+			center_and_update_coords();
+			// If the new atom is not in frame
+			adjust_frame_zoom(new_atom);
+			
+
+			// Update the bond directions for neighbor
+			var d = $("#currPos").html();
+			n.bond_dirs[d] = 0;
+			
+			// Reset active objects
+			var allObjects = canvas.getObjects();
+			for (var i = 0; i < allObjects.length; i++) {
+				allObjects[i].set('active', false);
+			}
+			canvas.renderAll();
+			atom_picked = new_atom;
+			display_atom_to_move();
+		}
+	});
+	$("#quitChangePos").click(function() {
+		disable_pick_atom_to_move();
+	});
+	
+	/* Top - Change Bond Order */
 	$("#changeBOBtn").click(function() {
 		if (pick_bond) {
 			disable_pick_bond();
@@ -282,18 +512,25 @@ var main = function() {
 			enable_pick_bond();
 		}
 	});
-	
 	$("#okChangeBO").click(function() {
-		// Remove fabric_bond from canvas
-		fabric_group.removeWithUpdate(bond_to_change.fabric_bond);
-		
+		var new_bo = parseFloat($("#changeBOInput").val());
+		if (!new_bo || new_bo <= 0 || new_bo > 3) {
+			$("#alertModal").find("p").html("The input bond order is not valid.");
+			$("#alertModal").modal();
+			return;
+		}
 		// Replace with a new bond (id is the same)
 		var id = bond_to_change.id; // pos in the bonds array
 		var angle = bond_to_change.angle;
 		var atom1 = bond_to_change.atom1;
 		var atom2 = bond_to_change.atom2;
 		var old_bo = bond_to_change.order;
-		var new_bo = parseFloat($("#changeBOInput").val());
+		
+
+		// Remove fabric_bond from canvas
+		fabric_group.removeWithUpdate(bond_to_change.fabric_bond);
+		canvas.remove(bond_to_change.fabric_bond);
+		
 		var new_bond = new Bond(atom1, atom2, new_bo, angle);
 		bonds.splice(id, 1, new_bond);
 		
@@ -316,27 +553,19 @@ var main = function() {
 		for (var i = 0; i < allObjects.length; i++) {
 			allObjects[i].set('active', false);
 		}
-		active_atom.fabric_atom.set('active', true);
-		active_atom.get_properties();
+		if (active_atom) {
+			active_atom.fabric_atom.set('active', true);
+			active_atom.get_properties();
+		}
 		canvas.renderAll();
-		
-		disable_pick_bond();
+		bond_to_change = null;
+		display_bond_to_change();
 	});
-	
 	$("#quitChangeBO").click(function() {
 		disable_pick_bond();
 	});
 	
-	
-	/* Pick two atoms */
-	// $("#pickTwoBtn").click(function() {
-// 		if (pick_two) {          // If it is already in pick_two mode
-// 			disable_pick_two();
-// 		} else {                 // If clicked to enable pick_two mode
-// 			enable_pick_two();
-// 		}
-// 	});
-	
+	/* Top - Pick atoms as base of the new ring */
 	$("#okPickedAtoms").click(function() {
 		var start = two_atoms_to_bond[0];
 		var end   = two_atoms_to_bond[1];
@@ -359,11 +588,10 @@ var main = function() {
 				console.log(b.atom1.element+" "+b.atom2.element);
 			}
 		}
-		disable_pick_two();
+		disable_pick_ring_base();
 	});
-	
 	$("#quitPickedAtoms").click(function() {
-		disable_pick_two();
+		disable_pick_ring_base();
 		$("#pickTwoInfoRow").addClass("hidden");
 		$("#atomOrGroup").val("default");
 		$("#newAtom").addClass("hidden");
@@ -374,93 +602,6 @@ var main = function() {
 	});
 	
 
-	
-	/* Search molecule bar animations */
-	$("#searchMolecule").focusin(function() {
-		if ($("#searchMolecule").val() != "") {
-			$("#moleculeList").removeClass("hidden");
-		}
-	});
-	$("#searchMolecule").focusout(function() {
-	    setTimeout(function() {
-	        $("#moleculeList").addClass("hidden");
-	    }, 200);
-	});	
-	
-	/* Search functional group bar animations */
-	$("#searchFuncGroup").focusin(function() {
-		if ($("#searchFuncGroup").val() != "") {
-			$("#funcGroupList").removeClass("hidden");
-		}
-	});
-	$("#searchFuncGroup").focusout(function() {
-	    setTimeout(function() {
-	        $("#funcGroupList").addClass("hidden");
-	    }, 200);
-	});	
-	
-	/* An imported molecule is clicked */
-	$("#moleculeList").on("click", "li", function() {
-		
-		// If there already exists atoms, ask if user wants to clear the screen
-		if (atoms.length > 0) {
-			$("#importAlert").modal();
-			return;
-		}
-		
-		var text = $(this).text();
-		$("#searchMolecule").val(text);
-		
-		// Get the structure of this molecule
-		var f_name = text.substr(0,text.indexOf(" -- "));
-		var structure = molecules[f_name];
-		
-		for (var i=0; i<structure["n_atoms"]; i++) {
-			var atom_info = structure["atoms"][i];
-			var newAtom = create_atom(
-				atom_info["element"],
-				atom_info["x_2d"] * M,
-				atom_info["y_2d"] * M
-			);
-		}
-		
-		for (var i=0; i<structure["n_atoms"]; i++) {
-			var atom_info = structure["atoms"][i];
-			for (var j=0; j<atom_info["neighbors"].length; j++) {
-				var n = atom_info["neighbors"][j];
-				var newBond = create_bond(atoms[i], atoms[n], atom_info["bos"][j]);
-			}
-		}
-		
-		for (var i in atoms) {
-			add_to_fabric_group(atoms[i].fabric_atom);
-		}
-		for (var i in bonds) {
-			add_to_fabric_group(bonds[i].fabric_bond);
-		}
-		
-		center_and_update_coords();
-		
-		var allObjects = canvas.getObjects();
-		for (var i = 0; i < allObjects.length; i++) {
-			allObjects[i].set('active', false);
-		}
-		canvas.renderAll();
-	});
-	
-	/* An imported functional group is clicked */
-	$("#funcGroupList").on("click", "li", function() {
-		
-		var text = $(this).text();
-		$("#searchFuncGroup").val(text);
-		// Get the structure of this molecule
-		func_group_name = text.substr(0,text.indexOf(" -- "));
-		// add_new_group_to_canvas(common_name);
-		
-	});
-	
-	/* Search configurations */
-	
 }
 
 $(document).ready(main);
@@ -481,27 +622,29 @@ function reset_all() {
 	clear_canvas();
 	
 	// Right sidebar properties
-	$("#neighbors").empty();
-	$("#factor").empty();
-	$("#formula").empty();
+	$("#prop").find("section").empty();
+	// $("#neighbors").empty();
+	// $("#factor").empty();
+	// $("#formula").empty();
 	
 	// Left selection sidebar
-	$("#searchMolecule").val("");
-	
-	$("#pickTwoInfoRow").addClass("hidden"); // For the ring
-	
+	$("input").val("");
+	$("select").val("default");
 	$("#bondBtn").html("Add to canvas!");
+	// Because the first atom doesn't need a bond
 	$("#boSelect").addClass("hidden");
 	$("#boSelectLabel").addClass("hidden");
 	
-	var group_center = new fabric.Point(fabric_group.left, fabric_group.top);
-	canvas.zoomToPoint(group_center, 1);
-	
 	// Top toolbar
-	disable_pick_two();
+	disable_pick_atom_to_erase();
+	disable_pick_bond();
+	disable_pick_ring_base();
+	disable_pick_atom_to_change();
+	disable_pick_atom_to_move();
+	
 }
 function clear_canvas() {
-	canvas.selection = false;
+	canvas.selection = false; // group selection disabled
 	canvas.clear();
 	fabric_group = new fabric.Group([], {
 		subTargetCheck : true,
@@ -516,9 +659,11 @@ function clear_canvas() {
 	canvas.add(fabric_group);
 	fabric_group.center();
 	fabric_group.setCoords();
+	var group_center = new fabric.Point(fabric_group.left, fabric_group.top);
+	canvas.zoomToPoint(group_center, 1);
 }
 
-/* Load the molecule structures from PHP */
+/* Load the molecule/functional group structures from PHP. */
 function load_molecule_structures() {
 	$.ajax({
 		type: "GET",
@@ -533,8 +678,6 @@ function load_molecule_structures() {
 		}
 	});
 }
-
-/* Load the functional group structures */
 function load_func_group_structures() {
 	$.ajax({
 		type: "GET",
@@ -550,7 +693,7 @@ function load_func_group_structures() {
 	});
 }
 
-/* Calculate coords for creating the new atom, object with x, y as keys. */
+/* Calculate coords for creating the new atom. Return object with x, y as keys. */
 function new_atom_coords(old_atom, distance) {
 	var coords = {x: old_atom.abs_left, y: old_atom.abs_top};
 	
@@ -722,10 +865,15 @@ function new_atom_coords(old_atom, distance) {
 	}
 }
 
-/* Create & return new Atom at (x,y), update atoms, formula, and sidebar. */
-function create_atom(element, x, y) {
+/* Create new Atom at (x,y), update atoms, formula, sidebar. Return Atom. */
+function create_atom(element, x, y, id) {
 	// The Atom object
-	var a = new Atom(element, x, y);
+	
+	if (id || id == 0) {     // If id is specified
+		var a = new Atom(element, x, y, id);
+	} else {                 // If id is not specified
+		var a = new Atom(element, x, y);
+	}
 	
 	// If this is the first atom
 	if (atoms.length == 0) {
@@ -738,7 +886,11 @@ function create_atom(element, x, y) {
 	}
 	
 	// Add atom to the list of atoms
-	atoms.push(a);
+	if (id || id == 0) {
+		atoms[id] = a;
+	} else {
+		atoms.push(a);
+	}
 	
 	// Add the atom to the formula
 	if (!formula_dict[element]) {
@@ -750,18 +902,27 @@ function create_atom(element, x, y) {
 	return a;
 }
 
-/* Bond two atoms together, update bonds. Return bond. */
-function create_bond(atom1, atom2, bo) {
+/* Bond two atoms together, update bonds. Return Bond. */
+function create_bond(atom1, atom2, bo, id) {
 	// Calculate the angle of the bond based on the two atoms
 	var angle_rad = Math.atan( (atom1.rel_top-atom2.rel_top)/(atom1.rel_left-atom2.rel_left) );
 	var angle = angle_rad * 180 / Math.PI;
 	// angle is between -90 and 90
 	
 	// Create new bond
-	var b = new Bond(atom1, atom2, bo, angle);
+	if (id || id == 0) {
+		var b = new Bond(atom1, atom2, bo, angle, id);
+	} else {
+		var b = new Bond(atom1, atom2, bo, angle);
+	}
+	
 	
 	// Add to bonds array
-	bonds.push(b);
+	if (id || id == 0) {
+		bonds[id] = b;
+	} else {
+		bonds.push(b);
+	}
 	
 	// Update the bonds list for both atoms.
 	atom1.bonds.push(b);
@@ -832,6 +993,7 @@ function create_bond(atom1, atom2, bo) {
 	return b;
 }
 
+/* Add atom or group to canvas. */
 function add_new_atom_to_canvas() {
 	// Get values from boxes
 	var atomOrGroup = $("#atomOrGroup").val();
@@ -849,17 +1011,17 @@ function add_new_atom_to_canvas() {
 	    }, 1000); // waiting one second
 		return;
 	}
+	if (!bo || (atoms.length > 0 && bo == "default") || bo <= 0 || bo > 3) {
+		$("#boSelect").addClass("invalidInput");
+	    setTimeout(function() {
+	        $("#boSelect").removeClass("invalidInput");
+	    }, 1000); // waiting one second
+		return;
+	}
 	if (element == "default") {
 		$("#elementSelect").addClass("invalidInput");
 	    setTimeout(function() {
 	        $("#elementSelect").removeClass("invalidInput");
-	    }, 1000); // waiting one second
-		return;
-	}
-	if (atoms.length > 0 && bo == "default") {
-		$("#boSelect").addClass("invalidInput");
-	    setTimeout(function() {
-	        $("#boSelect").removeClass("invalidInput");
 	    }, 1000); // waiting one second
 		return;
 	}
@@ -877,8 +1039,8 @@ function add_new_atom_to_canvas() {
 		center_and_update_coords();
 	} else {
 		if (!active_atom) {
-			$("#bondBtnAlert").find("p").html("Please select an atom to bond to");
-			$("#bondBtnAlert").modal();
+			$("#alertModal").find("p").html("Please select an atom to bond to");
+			$("#alertModal").modal();
 			return;
 		}
 		var old_atom = active_atom;
@@ -898,22 +1060,21 @@ function add_new_atom_to_canvas() {
 		var b = create_bond(a, old_atom, bo);
 		add_to_fabric_group(b.fabric_bond);
 
-		// Reset active objects
-		var allObjects = canvas.getObjects();
-		for (var i = 0; i < allObjects.length; i++) {
-			allObjects[i].set('active', false);
-		}
+	
+	}
+	// Reset active objects
+	var allObjects = canvas.getObjects();
+	for (var i = 0; i < allObjects.length; i++) {
+		allObjects[i].set('active', false);
+	}
+	if (active_atom) {
 		active_atom.fabric_atom.set('active', true);
 		active_atom.get_properties();
-	
 	}
 	canvas.renderAll();
     
 }
-
 function add_new_group_to_canvas(group_name) {
-	
-	
 	var structure = func_groups[group_name];
 	console.log(structure["formula"], structure["n_atoms"]);
 	
@@ -998,7 +1159,6 @@ function center_and_update_coords() {
 		bonds[i].update_coords();
 	}
 }
-
 function adjust_frame_zoom(atom) {
 	// If the new atom is not in frame
 	if (atom && (atom.abs_left   < R*canvas.getZoom()  ||
@@ -1012,7 +1172,7 @@ function adjust_frame_zoom(atom) {
 	}
 }
 
-/* Find out if the searched molecule exists. */
+/* Search for the molecule or functional group. */
 function search_molecule(search_text) {
 	// Clear the molecule list
 	if (!search_text || search_text == "") {
@@ -1051,8 +1211,6 @@ function search_molecule(search_text) {
 		$("#moleculeList").html(html_str);
 	}
 }
-
-/* Find out if the searched functional group exists. */
 function search_func_group(search_text) {
 	// Clear the functional group list
 	if (!search_text || search_text == "") {
@@ -1090,19 +1248,23 @@ function search_func_group(search_text) {
 	}
 }
 
-/* Toolbar - Enable the pick two atoms to bond function. */
-function enable_pick_two() {
-	pick_two = true;
+/* Enable/disagle the pick two atoms for ring function. */
+function enable_pick_ring_base() {
+	// Disable everything else
+	disable_pick_bond();
+	disable_pick_atom_to_erase();
+	disable_pick_atom_to_change();
+	disable_pick_atom_to_move();
+	
+	pick_ring_base = true;
 	// $("#pickTwoInfoRow").removeClass("hidden");
 	// resizeCanvas();
 	// display_atoms_to_bond();
 	// Disable adding new atoms
 	// $("#bondBtn").prop("disabled", true);
 }
-
-/* Toolbar - Disable the pick two atoms to bond function. */
-function disable_pick_two() {
-	pick_two = false;
+function disable_pick_ring_base() {
+	pick_ring_base = false;
 	// $("#pickTwoInfoRow").addClass("hidden");
 	// resizeCanvas();
 	while (two_atoms_to_bond.length > 0) {
@@ -1114,8 +1276,6 @@ function disable_pick_two() {
 	// Enable adding new atoms
 	// $("#bondBtn").prop("disabled", false);
 }
-
-/* Toolbar - Display the existing atoms picked by the user to bond. */
 function display_atoms_to_bond() {
 	if (two_atoms_to_bond.length == 0) {
 		$("#pickTwoInfo").html("<b>Click on 1 or 2 atoms as the base of an aromatic ring</b>");
@@ -1131,8 +1291,7 @@ function display_atoms_to_bond() {
 		}
 	}
 }
-
-/* Toolbar - Return the path between two atoms selected. */
+/* Return the path between two atoms selected. */
 function atoms_on_ring() {
 	var start = two_atoms_to_bond[0];
 	var end   = two_atoms_to_bond[1];
@@ -1177,21 +1336,24 @@ function atoms_on_ring() {
 	return path;
 }
 
-
-/* Toolbar - Enable the pick two atoms to bond function. */
+/* Enable/disable the pick bond & change bo function. */
 function enable_pick_bond() {
+	// Disable everything else
+	disable_pick_atom_to_erase();
+	disable_pick_ring_base();
+	disable_pick_atom_to_change();
+	disable_pick_atom_to_move();
+
 	pick_bond = true;
 	$("#changeBOInfoRow").removeClass("hidden");
 	$("#tooltipBOChange").removeClass("hidden");
-	resizeCanvas();
+	$("#bondBtn").prop("disabled", true);
 	display_bond_to_change();
 }
-
-/* Toolbar - Disable the pick two atoms to bond function. */
 function disable_pick_bond() {
 	pick_bond = false;
 	$("#changeBOInfoRow").addClass("hidden");
-	resizeCanvas();
+	$("#bondBtn").prop("disabled", false);
 	if (bond_to_change) {
 		// For all lines in the fabric_bond group, change stroke & strokeWidth
 		var lines = bond_to_change.fabric_bond._objects;
@@ -1205,9 +1367,6 @@ function disable_pick_bond() {
 	}
 	canvas.renderAll();
 }
-
-
-/* Toolbar - Display the bond the user wants to change. */
 function display_bond_to_change() {
 	if (!bond_to_change) {
 		$("#tooltipBOChange").removeClass("hidden");
@@ -1216,9 +1375,141 @@ function display_bond_to_change() {
 	} else {
 		$("#tooltipBOChange").addClass("hidden");
 		$("#makeBOChange").removeClass("hidden");
-		$("#currBO").html("<b>"+bond_to_change.order+"</b>");
+		$("#changeBOInput").val("");
+		$("#currBO").html(bond_to_change.order);
 		$("#okChangeBO").prop("disabled", false);
 		
+	}
+}
+
+/* Enable/disable the pick one atom to erase function. */
+function enable_pick_atom_to_erase() {
+	// Disable everything else
+	disable_pick_bond();
+	disable_pick_ring_base();
+	disable_pick_atom_to_change();
+	disable_pick_atom_to_move();
+	
+	pick_atom_to_erase = true;
+	$("#eraseInfoRow").removeClass("hidden");
+	$("#tooltipErase").removeClass("hidden");
+	$("#bondBtn").prop("disabled", true);
+	display_atom_to_erase();
+}
+function disable_pick_atom_to_erase() {
+	pick_atom_to_erase = false;
+	$("#eraseInfoRow").addClass("hidden");
+	$("#bondBtn").prop("disabled", false);
+	if (atom_picked) {
+		atom_picked.fabric_atom.fontWeight = "normal";
+		atom_picked.fabric_atom.setColor("black");
+		atom_picked = null;
+	}
+	canvas.renderAll();
+}
+function display_atom_to_erase() {
+	if (!atom_picked) {
+		$("#tooltipErase").removeClass("hidden");
+		$("#promptErase").addClass("hidden");
+		$("#okErase").prop("disabled", true);
+	} else {
+		$("#tooltipErase").addClass("hidden");
+		$("#promptErase").removeClass("hidden");
+		$("#currAtom").html("<b>"+atom_picked.element+"</b>");
+		$("#okErase").prop("disabled", false);
+	}
+}
+
+/* Enable/disable the pick one atom to change function. */
+function enable_pick_atom_to_change() {
+	// Disable everything else
+	disable_pick_bond();
+	disable_pick_ring_base();
+	disable_pick_atom_to_erase();
+	disable_pick_atom_to_move();
+	
+	pick_atom_to_change = true;
+	$("#changeAtomInfoRow").removeClass("hidden");
+	$("#tooltipAtomChange").removeClass("hidden");
+	$("#bondBtn").prop("disabled", true);
+	display_atom_to_change();
+}
+function disable_pick_atom_to_change() {
+	pick_atom_to_change = false;
+	$("#changeAtomInfoRow").addClass("hidden");
+	$("#bondBtn").prop("disabled", false);
+	if (atom_picked) {
+		atom_picked.fabric_atom.fontWeight = "normal";
+		atom_picked.fabric_atom.setColor("black");
+		atom_picked = null;
+	}
+	canvas.renderAll();
+}
+function display_atom_to_change() {
+	if (!atom_picked) {
+		$("#tooltipAtomChange").removeClass("hidden");
+		$("#makeAtomChange").addClass("hidden");
+		$("#okChangeAtom").prop("disabled", true);
+	} else {
+		$("#tooltipAtomChange").addClass("hidden");
+		$("#makeAtomChange").removeClass("hidden");
+		$("#changeAtomInput").val("");
+		$("#currElement").html(atom_picked.element);
+		$("#okChangeAtom").prop("disabled", false);
+	}
+}
+
+/* Enable/disable the pick one atom to move function. */
+function enable_pick_atom_to_move() {
+	// Disable everything else
+	disable_pick_bond();
+	disable_pick_ring_base();
+	disable_pick_atom_to_erase();
+	disable_pick_atom_to_change();
+	
+	pick_atom_to_move = true;
+	$("#changePosInfoRow").removeClass("hidden");
+	$("#tooltipPosChange").removeClass("hidden");
+	$("#bondBtn").prop("disabled", true);
+	display_atom_to_move();
+}
+function disable_pick_atom_to_move() {
+	pick_atom_to_move = false;
+	$("#changePosInfoRow").addClass("hidden");
+	$("#bondBtn").prop("disabled", false);
+	if (atom_picked) {
+		atom_picked.fabric_atom.fontWeight = "normal";
+		atom_picked.fabric_atom.setColor("black");
+		atom_picked = null;
+	}
+	canvas.renderAll();
+}
+function display_atom_to_move() {
+	if (!atom_picked) {
+		$("#tooltipPosChange").removeClass("hidden");
+		$("#makePosChange").addClass("hidden");
+	} else {
+		if (atom_picked.neighbors.length == 1) {
+			$("#tooltipPosChange").addClass("hidden");
+			$("#makePosChange").removeClass("hidden");
+			var n = atom_picked.neighbors[0];
+			for (var dir in n.bond_dirs) {
+				if (n.bond_dirs[dir] == atom_picked) {
+					$("#currPos").html(dir);
+					break;
+				}
+			}
+		} else if (atom_picked.neighbors.length == 0){
+			// Alert
+			$("#alertModal").find("p").html("The atom is always centered by default.");
+			$("#alertModal").modal();
+			atom_picked = null;
+		} else {
+			// Alert
+			$("#alertModal").find("p").html("Only atoms bonded to one other atom can be changed in position.");
+			$("#alertModal").modal();
+			atom_picked = null;
+		}
 	}
 }
 
@@ -1270,7 +1561,7 @@ class Atom {
 		
 		this.fabric_atom.on("mousedown", function(options){
 			// In the case of picking two atoms to bond...
-			if (pick_two) {
+			if (pick_ring_base) {
 				// If the clicked atom is already selected, then deselect
 				var i = two_atoms_to_bond.indexOf(self);
 				if (i >= 0) {
@@ -1294,12 +1585,41 @@ class Atom {
 
 				canvas.renderAll();
 				display_atoms_to_bond();
-				return;
 			}
-			canvas.setActiveObject(this);
-			canvas.renderAll();
-			active_atom = self;
-			self.get_properties();
+			// Pick one atom to erase
+			else if (pick_atom_to_erase || pick_atom_to_change || pick_atom_to_move) {
+				// If the clicked atom is already selected, then deselect
+				if (atom_picked == self) {
+					atom_picked.fabric_atom.fontWeight = "normal";
+					atom_picked.fabric_atom.setColor("black");
+					atom_picked = null;
+				}
+				// Select the new atom
+				else {
+					if (atom_picked) {
+						atom_picked.fabric_atom.fontWeight = "normal";
+						atom_picked.fabric_atom.setColor("black");
+					}
+					atom_picked = self;
+					this.fontWeight = "bold";
+					this.setColor("#d3349e");
+				}
+				canvas.renderAll();
+				if (pick_atom_to_erase) {
+					display_atom_to_erase();
+				} else if (pick_atom_to_change) {
+					display_atom_to_change();
+				} else if (pick_atom_to_move) {
+					display_atom_to_move();
+				}
+			}
+			// Default, normal, show properties
+			else {
+				canvas.setActiveObject(this);
+				canvas.renderAll();
+				active_atom = self;
+				self.get_properties();
+			}
 		});
 	}
 	
@@ -1333,7 +1653,7 @@ class Atom {
 			for (var i=0; i<elements.length; i++) {
 			    var e = elements[i];
 			    var n = formula_dict[e];
-			    if (e != "C" && e != "H") {
+			    if (e != "C" && e != "H" && n > 0) {
 			    	$("#formula_line").append(e);
 					formula += e;
 					if (n > 1) {
@@ -1358,6 +1678,10 @@ class Atom {
 				}
 			} 
 		}
+		
+		/* DISPLAY THE ATOM SELECTED */
+		$("#selectedAtom").html("<h4>Selected atom</h4>");
+		$("#selectedAtom").append("<p>"+this.element+"</p>");
 		
 		/* DISPLAY ALL THE NEIGHBORS & BONDS W/ THEM: */
 		$("#neighbors").html("<h4>Neighbors</h4>");
@@ -1434,19 +1758,24 @@ class Bond {
 		getBond[atom1.id][atom2.id] = this;
 		getBond[atom2.id][atom1.id] = this;
 		
-		// TODO: Click on the bond will trigger events
 		this.fabric_bond.on("mousedown", function(options){
 			
 			// In the case of picking a bond to change...
 			if (pick_bond) {
 				if (bond_to_change) {
-					var old_selection = bond_to_change;
-					var lines = old_selection.fabric_bond._objects;
+					var lines = bond_to_change.fabric_bond._objects;
 					for (var i in lines) {
 						if (lines[i].get("type") == "line") {
 							lines[i].stroke = "black";
 							lines[i].strokeWidth = 1.5;
 						}
+					}
+					// If the clicked bond is already selected, then deselect
+					if (bond_to_change == self) {
+						bond_to_change = null;
+						canvas.renderAll();
+						display_bond_to_change();
+						return;
 					}
 				}
 				bond_to_change = self;
@@ -1457,14 +1786,13 @@ class Bond {
 						lines[i].strokeWidth = 2;
 					}
 				}
-
 				canvas.renderAll();
 				display_bond_to_change();
 				return;
 			}
 			
-			canvas.setActiveObject(this);
-			canvas.renderAll();
+			// canvas.setActiveObject(this);
+			// canvas.renderAll();
 			
 		});
 	}
@@ -1496,21 +1824,28 @@ class Bond {
 			originX        : "center",
 			originY        : "center"
 		});
-		if (this.order == 1) {
+		if (this.order > 0 && this.order <= 1) {
 			lines.addWithUpdate(new fabric.Line([start_x, y, end_x, y], {
+			    strokeDashArray: (this.order < 1? [3, 3]: undefined),
 			    stroke  : 'black',
 				strokeWidth: 1.5
 			}));
-		} else if (this.order == 2) {
+		// } else if (this.order == 1) {
+		// 	lines.addWithUpdate(new fabric.Line([start_x, y, end_x, y], {
+		// 	    stroke  : 'black',
+		// 		strokeWidth: 1.5
+		// 	}));
+		} else if (this.order <= 2) {
 			lines.addWithUpdate(new fabric.Line([start_x, y+3, end_x, y+3], {
 			    stroke  : 'black',
 				strokeWidth: 1.5
 			}));
 			lines.addWithUpdate(new fabric.Line([start_x, y-3, end_x, y-3], {
+				strokeDashArray: (this.order < 2? [3, 3]: undefined),
 			    stroke  : 'black',
 				strokeWidth: 1.5
 			}));
-		} else if (this.order == 3) {
+		} else if (this.order <= 3) {
 			lines.addWithUpdate(new fabric.Line([start_x, y+5, end_x, y+5], {
 			    stroke  : 'black',
 				strokeWidth: 1.5
@@ -1520,19 +1855,12 @@ class Bond {
 				strokeWidth: 1.5
 			}));
 			lines.addWithUpdate(new fabric.Line([start_x, y-5, end_x, y-5], {
+				strokeDashArray: (this.order < 3? [3, 3]: undefined),
 			    stroke  : 'black',
 				strokeWidth: 1.5
 			}));
-		} else if (this.order > 1) {
-			lines.addWithUpdate(new fabric.Line([start_x, y+3, end_x, y+3], {
-			    strokeDashArray: [3, 3],
-			    stroke  : 'black',
-				strokeWidth: 1.5
-			}));
-			lines.addWithUpdate(new fabric.Line([start_x, y-3, end_x, y-3], {
-			    stroke  : 'black',
-				strokeWidth: 1.5
-			}));
+		} else {
+			
 		}
 		lines.addWithUpdate(new fabric.Rect({
 		    left: start_x,

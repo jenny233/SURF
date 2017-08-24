@@ -48,17 +48,22 @@
 /*	margin: 0;*/
 }
 .infoRow {
-	margin-top : 20px;
+	margin-top : 10px;
 	position: relative;
+	height: 100%;
 }
 .infoElement { /* Things that show up after clicking toolbar */
 	margin-left: 20px;
 	display: inline-block;
 	vertical-align: baseline;
 }
-#changeBOPrompt, #changeBOInput {
+#makeBOChange > p, #makeAtomChange > p {
+	margin: 0 0 3px;
+}
+#changeBOPrompt, #changeBOInput, #changeAtomPrompt, #changeAtomInput {
 	display: inline-block;
 	max-width: 100px;
+	height: 26px;
 }
 .okQuitBtns {
 	position: absolute;
@@ -66,6 +71,9 @@
 	bottom: 0px;
 }
 .okQuitBtns > button {
+	border: 0;
+}
+#turnAtomLeft, #turnAtomRight {
 	border: 0;
 }
 #threeDBtn:before {
@@ -80,6 +88,54 @@
 	background-image : url("images/3d_view.png");
 	background-repeat: no-repeat;
 }
+#changeAtomBtn:before {
+	content: "";
+    width: 23px;
+    height: 25px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/atom.png");
+	background-repeat: no-repeat;
+}
+#changePosBtn:before {
+	content: "";
+    width: 23px;
+    height: 25px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/atom_pos.png");
+	background-repeat: no-repeat;
+}
+#turnAtomLeft:before {
+	content: "";
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/turn_left.png");
+	background-repeat: no-repeat;
+}
+#turnAtomRight:before {
+	content: "";
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: transparent;
+    background-position : center center;
+	background-size: 100% 100%;
+	background-image : url("images/turn_right.png");
+	background-repeat: no-repeat;
+}
 #changeBOBtn:before {
 	content: "";
     width: 22px;
@@ -92,11 +148,6 @@
 	background-image : url("images/bond.png");
 	background-repeat: no-repeat;
 }
-/*#saveMoleculeBtn > span {
-	font-size: 20px;
-	vertical-align: middle;
-	top: 0px;
-}*/
 #saveMoleculeBtn:before {
 	content: "";
     width: 22px;
@@ -250,8 +301,11 @@
 	
 }
 .searchList > li {
-	margin: 10px 5px;
+	padding: 5px;
 	cursor: pointer;
+}
+option {
+	padding: 5px;
 }
 .modal-title {
 	display: inline-block;

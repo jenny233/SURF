@@ -170,16 +170,22 @@
 							<span data-toggle="tooltip" data-placement="bottom" title="3D View (NH3 only currently)">
 								<button type="button" id="threeDBtn" class="btn toolbarBtn" data-toggle="modal" data-target="#myModal"></button>
 							</span>
-							<span data-toggle="tooltip" data-placement="bottom" title="Change bond order">
-								<button type="button" id="changeBOBtn" class="btn toolbarBtn"></button>
-							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Save (not yet implemented)">
 								<button type="button" id="saveMoleculeBtn" class="btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Change atom element">
+								<button type="button" id="changeAtomBtn" class="btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Change atom position">
+								<button type="button" id="changePosBtn" class="btn toolbarBtn"></button>
+							</span>
+							<span data-toggle="tooltip" data-placement="bottom" title="Change bond order">
+								<button type="button" id="changeBOBtn" class="btn toolbarBtn"></button>
 							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Clear all">
 								<button type="button" id="clearBtn" class="btn toolbarBtn"></button>
 							</span>
-							<span data-toggle="tooltip" data-placement="bottom" title="Erase one selected atom">
+							<span data-toggle="tooltip" data-placement="bottom" title="Erase selected atom">
 								<button type="button" id="eraseBtn" class="btn toolbarBtn"></button>
 							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Center all">
@@ -193,57 +199,168 @@
 							</span> -->
 						</div>
 						
-						<div id="changeBOInfoRow" class="hidden infoRow" >
-							<div id="tooltipBOChange" class="infoElement hidden">
-								<p><b><u><i>Click on a bond to see or change its bond order</i></u></b></p>
+						<div style="height:60px; margin-top:10px">
+						
+							<div id="changeBOInfoRow" class="hidden infoRow" >
+								<div id="tooltipBOChange" class="infoElement hidden"><p><b><u><i>
+									Click on a bond to see or change its bond order
+								</i></u></b></p></div>
+								<div id="makeBOChange" class="infoElement hidden">
+									<p>
+										<b><u><i>Current bond order:</i></u> </b>
+										<span id="currBO"></span>
+									</p>
+									<p id="changeBOPrompt"><b>Change to: </b></p>
+									<input type="text" class="form-control infoElement" id="changeBOInput">
+								</div>
+								<div class="btn-group infoElement okQuitBtns">
+									<button type="button" class="btn btn-default" id="okChangeBO" disabled>
+									  <span class="glyphicon glyphicon-ok-circle"></span> Change
+									</button>
+									<button type="button" class="btn btn-default" id="quitChangeBO">
+									  <span class="glyphicon glyphicon-remove-circle"></span> DONE
+									</button>
+								</div>
 							</div>
-							<div id="makeBOChange" class="infoElement hidden">
-								<p>
-									<b><u><i>Current bond order: </i></u></b>
-									<span id="currBO"></span>
+							
+							<div id="changeAtomInfoRow" class="hidden infoRow" >
+								<div id="tooltipAtomChange" class="infoElement hidden"><p><b><u><i>
+									Click on an atom to change its element
+								</i></u></b></p></div>
+								<div id="makeAtomChange" class="infoElement hidden">
+									<p>
+										<b><u><i>Current element:</i></u> </b>
+										<span id="currElement"></span>
+									</p>
+									<p id="changeAtomPrompt"><b>Change to: </b></p>
+									<input type="text" class="form-control infoElement" id="changeAtomInput">
+								</div>
+								<div class="btn-group infoElement okQuitBtns">
+									<button type="button" class="btn btn-default" id="okChangeAtom" disabled>
+									  <span class="glyphicon glyphicon-ok-circle"></span> Change
+									</button>
+									<button type="button" class="btn btn-default" id="quitChangeAtom">
+									  <span class="glyphicon glyphicon-remove-circle"></span> DONE
+									</button>
+								</div>
+							</div>
+							<div id="changePosInfoRow" class="hidden infoRow" >
+								<div id="tooltipPosChange" class="infoElement hidden"><p><b><u><i>
+									Click on an atom to change its position (angle of bonding)<br>
+									NOTE: It can be only bonded to 1 other atom.
+								</i></u></b></p></div>
+								<div id="makePosChange" class="infoElement hidden">
+									<p>
+										<b><u><i>Current position:</i></u> </b>
+										<span id="currPos"></span>
+									</p>
+									<button type="button" class="btn-default" id="turnAtomLeft"></button>
+									<button type="button" class="btn-default" id="turnAtomRight"></button>
+								</div>
+								<div class="btn-group infoElement okQuitBtns">
+									<button type="button" class="btn btn-default" id="quitChangePos">
+									  <span class="glyphicon glyphicon-remove-circle"></span> DONE
+									</button>
+								</div>
+							</div>
+						
+							<div id="eraseInfoRow" class="infoRow hidden">
+								<div id="tooltipErase" class="infoElement hidden"><p><b><u><i>
+									Click on the atom you want to erase.<br>NOTE: It can be only bonded to 1 other atom.
+								</i></u></b></p></div>
+								<div id="promptErase" class="infoElement hidden"><p>
+									<b><u><i>Atom to be erased:</i></u> </b>
+									<span id="currAtom"></span>
+								</p></div>
+								<div class="btn-group infoElement okQuitBtns">
+									<button type="button" class="btn btn-default" id="okErase">
+									  <span class="glyphicon glyphicon-ok-circle"></span> Erase
+									</button>
+									<button type="button" class="btn btn-default" id="quitErase">
+									  <span class="glyphicon glyphicon-remove-circle"></span> DONE
+									</button>
+								</div>
+							</div>
+						
+							<div id="pickTwoInfoRow" class="infoRow hidden">
+								<p><b><u><i>
+									Click on 1 or 2 atoms on the canvas as the ring's basis!
+									<!-- <span class="glyphicon glyphicon-arrow-right"></span> -->
+								</i></u></b></p>
+								<p class="infoElement">
+									<b><i>Or...</i>&ensp;</b>
 								</p>
-								<p id="changeBOPrompt"><b>Change to: </b></p>
-								<input type="text" class="form-control infoElement" id="changeBOInput">
+								<div class="btn-group infoElement okQuitBtns">
+									<button type="button" class="btn btn-default" id="quitPickedAtoms">
+									  <span class="glyphicon glyphicon-remove-circle"></span> EXIT to see properties
+									</button>
+								</div>
 							</div>
-							<div class="btn-group infoElement okQuitBtns">
-								<button type="button" class="btn btn-default" id="okChangeBO" disabled>
-								  <span class="glyphicon glyphicon-ok-circle"></span> OK
-								</button>
-								<button type="button" class="btn btn-default" id="quitChangeBO">
-								  <span class="glyphicon glyphicon-remove-circle"></span> QUIT
-								</button>
-							</div>
-						</div>
 						
-						<div id="pickTwoInfoRow" class="infoRow hidden">
-							<p><b><u><i>
-								Click on 1 or 2 atoms on the canvas as the ring's basis!
-								<!-- <span class="glyphicon glyphicon-arrow-right"></span> -->
-							</i></u></b></p>
-							<p class="infoElement">
-								<b><i>Or...&ensp;</i></b>
-							</p>
-							<div class="btn-group infoElement okQuitBtns">
-								<button type="button" class="btn btn-default" id="quitPickedAtoms">
-								  <span class="glyphicon glyphicon-remove-circle"></span> QUIT to see properties
-								</button>
+							<div class="modal fade" id="alertModal">
+							  <div class="modal-dialog" role="document">
+							    <div class="modal-content">
+							      <div class="modal-header">
+							        <h5 class="modal-title">Note</h5>
+							        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							          <span aria-hidden="true">&times;</span>
+							        </button>
+							      </div>
+							      <div class="modal-body">
+							        <p></p>
+							      </div>
+							    </div>
+							  </div>
 							</div>
-						</div>
-						
-						<div class="modal fade" id="eraseAlert">
-						  <div class="modal-dialog" role="document">
-						    <div class="modal-content">
-						      <div class="modal-header">
-						        <h5 class="modal-title">Note</h5>
-						        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-						          <span aria-hidden="true">&times;</span>
-						        </button>
-						      </div>
-						      <div class="modal-body">
-						        <p></p>
-						      </div>
-						    </div>
-						  </div>
+							
+							<div class="modal fade" id="changeBOAlert">
+							  <div class="modal-dialog" role="document">
+							    <div class="modal-content">
+							      <div class="modal-header">
+							        <h5 class="modal-title">Note</h5>
+							        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							          <span aria-hidden="true">&times;</span>
+							        </button>
+							      </div>
+							      <div class="modal-body">
+							        <p></p>
+							      </div>
+							    </div>
+							  </div>
+							</div>
+							
+							<div class="modal fade" id="changeAtomAlert">
+							  <div class="modal-dialog" role="document">
+							    <div class="modal-content">
+							      <div class="modal-header">
+							        <h5 class="modal-title">Note</h5>
+							        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							          <span aria-hidden="true">&times;</span>
+							        </button>
+							      </div>
+							      <div class="modal-body">
+							        <p></p>
+							      </div>
+							    </div>
+							  </div>
+							</div>
+							
+							<div class="modal fade" id="changePosAlert">
+							  <div class="modal-dialog" role="document">
+							    <div class="modal-content">
+							      <div class="modal-header">
+							        <h5 class="modal-title">Note</h5>
+							        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							          <span aria-hidden="true">&times;</span>
+							        </button>
+							      </div>
+							      <div class="modal-body">
+							        <p></p>
+							      </div>
+							    </div>
+							  </div>
+							</div>
+							
 						</div>
 						
 					</div>
@@ -316,6 +433,7 @@
 					<div class="row" id="prop">
 						<span><hr></span>
 						<section id="formula"></section>
+						<section id="selectedAtom"></section>
 						<section id="factor"></section>
 						<section id="neighbors"></section>
 					</div>
