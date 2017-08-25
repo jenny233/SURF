@@ -255,8 +255,13 @@
 										<b><u><i>Current position:</i></u> </b>
 										<span id="currPos"></span>
 									</p>
-									<button type="button" class="btn-default" id="turnAtomLeft"></button>
-									<button type="button" class="btn-default" id="turnAtomRight"></button>
+									<label id="turnBtnLabel" for="turnAtomLeft turnAtomRight">Turn: </label>
+									<button type="button" class="btn-default" id="turnAtomLeft" 
+									data-toggle="tooltip" data-placement="left" title="Turn left 45&deg;"></button>
+									<button type="button" class="btn-default" id="turnAtomRight" 
+									data-toggle="tooltip" data-placement="right" title="Turn right 45&deg;"></button>
+									<label id="turnDirSelectLabel" for="turnDirSelect">Or jump to: </label>
+									<select id="turnDirSelect" class="form-control"></select>
 								</div>
 								<div class="btn-group infoElement okQuitBtns">
 									<button type="button" class="btn btn-default" id="quitChangePos">

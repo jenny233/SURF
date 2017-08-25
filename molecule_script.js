@@ -435,10 +435,47 @@ var main = function() {
 			enable_pick_atom_to_move();
 		}
 	});
-	
-	// TODO: HAVE TO BE ABLE TO USE DROP DOWN MENU TO SELECT DIRECTION
-	// WHAT IF IT CONFLICTS WITH EXISTING ATOM? CAN'T JUST CHANGE THE DIR TO
-	// NEW_ATOM BECAUSE THE OTHER ONE WOULD BE LOST
+	$("#turnDirSelect").on("click", "option", function() {
+		// Turn atom to that direction
+		var new_dir = $(this).text();
+		// Find out what theta should be
+		var d = $("#currPos").html();
+		var n = atom_picked.neighbors[0];
+		if (n.bond_dirs[d] == atom_picked) {
+			n.bond_dirs[d] = 0;
+		}
+		var theta = 0;
+		// Turn right every time
+		while (d != new_dir) {
+			if (d == "top-right") {
+				d = "right";
+			} else if (d == "top") {
+				d = "top-right";
+			} else if (d == "top-left") {
+				d = "top";
+			} else if (d == "left") {
+				d = "top-left";
+			} else if (d == "bottom-left") {
+				d = "left";
+			} else if (d == "bottom") {
+				d = "bottom-left";
+			} else if (d == "bottom-right"){
+				d = "bottom";
+			} else if (d == "right") {
+				d = "bottom-right";
+			}
+			theta += Math.PI/4;
+		}
+		var new_atom = turn_atom_by_theta(theta);
+		// Reset active objects
+		var allObjects = canvas.getObjects();
+		for (var i = 0; i < allObjects.length; i++) {
+			allObjects[i].set('active', false);
+		}
+		canvas.renderAll();
+		atom_picked = new_atom;
+		display_atom_to_move();
+	});
 	$("#turnAtomLeft").click(function() {
 		if (atom_picked) {
 			var n = atom_picked.neighbors[0];
@@ -477,48 +514,8 @@ var main = function() {
 				return;
 			}
 			
+			var new_atom = turn_atom_by_theta(theta);
 			
-			var x = atom_picked.abs_left - n.abs_left;
-			var y = atom_picked.abs_top  - n.abs_top;
-			
-			// Rotate by theta, create new atom
-			var new_x = x * Math.cos(theta) - y * Math.sin(theta) + n.abs_left;
-			var new_y = y * Math.cos(theta) + x * Math.sin(theta) + n.abs_top;
-			var new_atom = create_atom(atom_picked.element, new_x, new_y, atom_picked.id);
-			new_atom.fabric_atom.fontWeight = "bold";
-			new_atom.fabric_atom.setColor("#d3349e");
-			new_atom.rel_left = new_atom.abs_left - fabric_group.left;
-			new_atom.rel_top  = new_atom.abs_top  - fabric_group.top;
-			
-			// Bond new atom and the neighbor
-			var b = atom_picked.bonds[0];
-			var new_bond = create_bond(new_atom, n, b.order, b.id);
-			new_bond.update_coords();
-			
-			// Get rid of the atom & bond pushed onto n.neighbors and n.bonds
-			// due to the create_bond() function. We need them at the correct
-			// place.
-			n.neighbors.pop();
-			n.bonds.pop();
-			var index = n.neighbors.indexOf(atom_picked);
-			n.neighbors[index] = new_atom;
-			index = n.bonds.indexOf(b);
-			n.bonds[index] = new_bond;
-
-			// Take old atom and old bond off of canvas
-			fabric_group.removeWithUpdate(atom_picked.fabric_atom);
-			canvas.remove(atom_picked.fabric_atom);
-			fabric_group.removeWithUpdate(b.fabric_bond);
-			canvas.remove(b.fabric_bond);
-			
-			// Add new atom and new bond onto canvas
-			add_to_fabric_group(new_atom.fabric_atom);
-			add_to_fabric_group(new_bond.fabric_bond);
-			center_and_update_coords();
-			// If the new atom is not in frame
-			adjust_frame_zoom(new_atom);
-			
-
 			
 			// Reset active objects
 			var allObjects = canvas.getObjects();
@@ -528,7 +525,57 @@ var main = function() {
 			canvas.renderAll();
 			atom_picked = new_atom;
 			display_atom_to_move();
-
+		}
+	});
+	$("#turnAtomRight").click(function() {
+		if (atom_picked) {
+			var n = atom_picked.neighbors[0];
+			var d = $("#currPos").html();
+			if (n.bond_dirs[d] == atom_picked) {
+				n.bond_dirs[d] = 0;
+			}
+			
+			// Find the nearest empty spot
+			var count = 0; // we don't want an infinite loop
+			var theta = 0; // degrees we turn by
+			do {
+				count++;
+				theta += Math.PI/4;
+				if (d == "top-right") {
+					d = "right";
+				} else if (d == "top") {
+					d = "top-right";
+				} else if (d == "top-left") {
+					d = "top";
+				} else if (d == "left") {
+					d = "top-left";
+				} else if (d == "bottom-left") {
+					d = "left";
+				} else if (d == "bottom") {
+					d = "bottom-left";
+				} else if (d == "bottom-right"){
+					d = "bottom";
+				} else if (d == "right") {
+					d = "bottom-right";
+				}
+			} while (n.bond_dirs[d] != 0 && count < 8)
+			
+			// If all the spots are filled
+			if (count == 8) {
+				return;
+			}
+			
+			var new_atom = turn_atom_by_theta(theta);
+			
+			
+			// Reset active objects
+			var allObjects = canvas.getObjects();
+			for (var i = 0; i < allObjects.length; i++) {
+				allObjects[i].set('active', false);
+			}
+			canvas.renderAll();
+			atom_picked = new_atom;
+			display_atom_to_move();
 		}
 	});
 	$("#quitChangePos").click(function() {
@@ -1515,6 +1562,50 @@ function disable_pick_atom_to_move() {
 	}
 	canvas.renderAll();
 }
+function turn_atom_by_theta(theta) {
+	var n = atom_picked.neighbors[0];
+	var x = atom_picked.abs_left - n.abs_left;
+	var y = atom_picked.abs_top  - n.abs_top;
+	
+	// Rotate by theta, create new atom
+	var new_x = x * Math.cos(theta) - y * Math.sin(theta) + n.abs_left;
+	var new_y = y * Math.cos(theta) + x * Math.sin(theta) + n.abs_top;
+	var new_atom = create_atom(atom_picked.element, new_x, new_y, atom_picked.id);
+	new_atom.fabric_atom.fontWeight = "bold";
+	new_atom.fabric_atom.setColor("#d3349e");
+	new_atom.rel_left = new_atom.abs_left - fabric_group.left;
+	new_atom.rel_top  = new_atom.abs_top  - fabric_group.top;
+	
+	// Bond new atom and the neighbor
+	var b = atom_picked.bonds[0];
+	var new_bond = create_bond(new_atom, n, b.order, b.id);
+	new_bond.update_coords();
+	
+	// Get rid of the atom & bond pushed onto n.neighbors and n.bonds
+	// due to the create_bond() function. We need them at the correct
+	// place.
+	n.neighbors.pop();
+	n.bonds.pop();
+	var index = n.neighbors.indexOf(atom_picked);
+	n.neighbors[index] = new_atom;
+	index = n.bonds.indexOf(b);
+	n.bonds[index] = new_bond;
+
+	// Take old atom and old bond off of canvas
+	fabric_group.removeWithUpdate(atom_picked.fabric_atom);
+	canvas.remove(atom_picked.fabric_atom);
+	fabric_group.removeWithUpdate(b.fabric_bond);
+	canvas.remove(b.fabric_bond);
+	
+	// Add new atom and new bond onto canvas
+	add_to_fabric_group(new_atom.fabric_atom);
+	add_to_fabric_group(new_bond.fabric_bond);
+	center_and_update_coords();
+	// If the new atom is not in frame
+	adjust_frame_zoom(new_atom);
+	
+	return new_atom;
+}
 function display_atom_to_move() {
 	if (!atom_picked) {
 		$("#tooltipPosChange").removeClass("hidden");
@@ -1524,10 +1615,14 @@ function display_atom_to_move() {
 			$("#tooltipPosChange").addClass("hidden");
 			$("#makePosChange").removeClass("hidden");
 			var n = atom_picked.neighbors[0];
+			$("#turnDirSelect").html("<option>Select direction</option>");
 			for (var dir in n.bond_dirs) {
 				if (n.bond_dirs[dir] == atom_picked) {
 					$("#currPos").html(dir);
-					break;
+				}
+				if (n.bond_dirs[dir] == 0) {
+					// Add to the selection list
+					$("#turnDirSelect").append("<option>"+dir+"</option>");
 				}
 			}
 		} else if (atom_picked.neighbors.length == 0){

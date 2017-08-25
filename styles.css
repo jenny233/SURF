@@ -76,6 +76,17 @@
 #turnAtomLeft, #turnAtomRight {
 	border: 0;
 }
+#turnBtnLabel {
+	display: inline-block;
+}
+#turnDirSelectLabel {
+	margin-left: 20px;
+	display: inline-block;
+}
+#turnDirSelect {
+	display: inline-block;
+	width: 150px;
+}
 #threeDBtn:before {
 	content: "";
     width: 22px;
