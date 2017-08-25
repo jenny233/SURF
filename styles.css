@@ -63,7 +63,7 @@
 #changeBOPrompt, #changeBOInput, #changeAtomPrompt, #changeAtomInput {
 	display: inline-block;
 	max-width: 100px;
-	height: 26px;
+/*	height: 26px;*/
 }
 .okQuitBtns {
 	position: absolute;

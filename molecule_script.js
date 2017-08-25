@@ -467,6 +467,9 @@ var main = function() {
 			theta += Math.PI/4;
 		}
 		var new_atom = turn_atom_by_theta(theta);
+		// Adjust formulat dict because 1 is added by create_atom()
+		formula_dict[atom_picked.element]--;
+		
 		// Reset active objects
 		var allObjects = canvas.getObjects();
 		for (var i = 0; i < allObjects.length; i++) {
@@ -515,7 +518,9 @@ var main = function() {
 			}
 			
 			var new_atom = turn_atom_by_theta(theta);
-			
+			// Adjust formulat dict because 1 is added by create_atom()
+			formula_dict[atom_picked.element]--;
+		
 			
 			// Reset active objects
 			var allObjects = canvas.getObjects();
@@ -566,7 +571,9 @@ var main = function() {
 			}
 			
 			var new_atom = turn_atom_by_theta(theta);
-			
+			// Adjust formulat dict because 1 is added by create_atom()
+			formula_dict[atom_picked.element]--;
+		
 			
 			// Reset active objects
 			var allObjects = canvas.getObjects();
@@ -1629,12 +1636,16 @@ function display_atom_to_move() {
 			// Alert
 			$("#alertModal").find("p").html("The atom is always centered by default.");
 			$("#alertModal").modal();
-			atom_picked = null;
+			// atom_picked = null;
+			$("#tooltipPosChange").removeClass("hidden");
+			$("#makePosChange").addClass("hidden");
 		} else {
 			// Alert
 			$("#alertModal").find("p").html("Only atoms bonded to one other atom can be changed in position.");
 			$("#alertModal").modal();
-			atom_picked = null;
+			// atom_picked = null;
+			$("#tooltipPosChange").removeClass("hidden");
+			$("#makePosChange").addClass("hidden");
 		}
 	}
 }
@@ -1756,7 +1767,7 @@ class Atom {
 		formula = "";
 		
 		// If there is C, C->H->the rest alphabetical
-		if (formula_dict["C"]) {
+		if (formula_dict["C"] && formula_dict["C"] > 0) {
 			$("#formula_line").append("C");
 			formula += "C";
 			if (formula_dict["C"] > 1) {
@@ -1764,7 +1775,7 @@ class Atom {
 				formula += formula_dict["C"];
 			}
 			// Append H
-			if (formula_dict["H"]) {
+			if (formula_dict["H"] && formula_dict["H"] > 0) {
 				$("#formula_line").append("H");
 				formula += "H";
 				if (formula_dict["H"] > 1) {
