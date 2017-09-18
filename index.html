@@ -77,7 +77,7 @@
 						</label>
 						
 					
-						<label for="atomOrGroup">Atom or functional group?</label>
+						<label for="atomOrGroup">Atom / functional group / ring?</label>
 						<select class="form-control" id="atomOrGroup">
 							<option value="default" selected>Select</option>
 							<option value="atom">Atom</option>
@@ -87,8 +87,8 @@
 						
 						<label for="boSelect" id="boSelectLabel">Select bond order</label>
 						<select class="form-control" id="boSelect">
-							<option value="default" selected>Select</option>
-							<option value=1>1 - Single</option>
+							<option value="default">Select</option>
+							<option value=1 selected>1 - Single</option>
 							<option value=2>2 - Double</option>
 							<option value=3>3 - Triple</option>
 							<option value=-1>Other</option>
@@ -100,9 +100,9 @@
 						<div id="newAtom" class="hidden">
 							<label for="elementSelect">Select an element</label>
 							<select class="form-control" id="elementSelect">
-								<option value="default" selected>Select</option>
+								<option value="default">Select</option>
 								<option value="H">H</option>
-								<option value="C">C</option>
+								<option value="C" selected>C</option>
 								<option value="N">N</option>
 								<option value="O">O</option>
 								<option value="F">F</option>
@@ -126,14 +126,18 @@
 							<!-- Pick either 1 or 2 atoms to bond to -->
 							<label for="ringSelect" id="ringSelectLabel">Select size of the ring</label>
 							<select class="form-control" id="ringSelect">
+								<option value=3>3 <img src=""></option>
 								<option value=4>4 <img src=""></option>
 								<option value=5>5 <img src=""></option>
-								<option value=6 selected>6 <img src=""></option>
+								<option value=6>6 <img src=""></option>
 								<option value=7>7 <img src=""></option>
+								<option value=8>8 <img src=""></option>
 								<option value=-1>Other</option>
 							</select>
 							<input type="text" class="form-control hidden" id="ringInput" placeholder="Enter ring size...">
 							
+							<label for="ringSideSelect" id="ringSideSelectLabel" class="hidden">Select which side to build the ring</label>
+							<select class="form-control hidden" id="ringSideSelect"></select>
 						</div>
 						
 					</div>
@@ -168,12 +172,12 @@
 					<!-- Tool bar -->
 					<div id="topToolbar" class="row">
 						<div class="btn-toolbar btn-group row" id="toolbarBtnGroup">
-							<span data-toggle="tooltip" data-placement="bottom" title="3D View (NH3 only currently)">
+							<!-- <span data-toggle="tooltip" data-placement="bottom" title="3D View (NH3 only currently)">
 								<button type="button" id="threeDBtn" class="btn toolbarBtn" data-toggle="modal" data-target="#myModal"></button>
 							</span>
 							<span data-toggle="tooltip" data-placement="bottom" title="Save (not yet implemented)">
 								<button type="button" id="saveMoleculeBtn" class="btn toolbarBtn"></button>
-							</span>
+							</span> -->
 							<span data-toggle="tooltip" data-placement="bottom" title="Change atom element">
 								<button type="button" id="changeAtomBtn" class="btn toolbarBtn"></button>
 							</span>
@@ -203,9 +207,12 @@
 						<div style="height:60px; margin-top:10px">
 						
 							<div id="changeBOInfoRow" class="hidden infoRow" >
-								<div id="tooltipBOChange" class="infoElement hidden"><p><b><u><i>
-									Click on a bond to see or change its bond order
-								</i></u></b></p></div>
+								<div id="tooltipBOChange" class="infoElement hidden">
+									<p>
+									<span class="glyphicon glyphicon-info-sign"></span>
+									<b><u><i>
+										Click on a bond to see or change its bond order
+									</i></u></b></p></div>
 								<div id="makeBOChange" class="infoElement hidden">
 									<p>
 										<b><u><i>Current bond order:</i></u> </b>
@@ -225,9 +232,12 @@
 							</div>
 							
 							<div id="changeAtomInfoRow" class="hidden infoRow" >
-								<div id="tooltipAtomChange" class="infoElement hidden"><p><b><u><i>
-									Click on an atom to change its element
-								</i></u></b></p></div>
+								<div id="tooltipAtomChange" class="infoElement hidden">
+									<p>
+									<span class="glyphicon glyphicon-info-sign"></span>
+									<b><u><i>
+										Click on an atom to change its element
+									</i></u></b></p></div>
 								<div id="makeAtomChange" class="infoElement hidden">
 									<p>
 										<b><u><i>Current element:</i></u> </b>
@@ -246,10 +256,13 @@
 								</div>
 							</div>
 							<div id="changePosInfoRow" class="hidden infoRow" >
-								<div id="tooltipPosChange" class="infoElement hidden"><p><b><u><i>
-									Click on an atom to change its position (angle of bonding)<br>
-									NOTE: It can be only bonded to 1 other atom.
-								</i></u></b></p></div>
+								<div id="tooltipPosChange" class="infoElement hidden">
+									<p>
+									<span class="glyphicon glyphicon-info-sign"></span>
+									<b><u><i>
+										Click on an atom to change its position (angle of bonding)<br>
+										NOTE: It can be only bonded to 1 other atom.
+									</i></u></b></p></div>
 								<div id="makePosChange" class="infoElement hidden">
 									<p>
 										<b><u><i>Current position:</i></u> </b>
@@ -271,9 +284,12 @@
 							</div>
 						
 							<div id="eraseInfoRow" class="infoRow hidden">
-								<div id="tooltipErase" class="infoElement hidden"><p><b><u><i>
-									Click on the atom you want to erase.<br>NOTE: It can be only bonded to 1 other atom.
-								</i></u></b></p></div>
+								<div id="tooltipErase" class="infoElement hidden">
+									<p>
+									<span class="glyphicon glyphicon-info-sign"></span>
+									<b><u><i>
+										Click on the atom you want to erase.<br>NOTE: It can be only bonded to 1 other atom.
+									</i></u></b></p></div>
 								<div id="promptErase" class="infoElement hidden"><p>
 									<b><u><i>Atom to be erased:</i></u> </b>
 									<span id="currAtom"></span>
@@ -289,8 +305,10 @@
 							</div>
 						
 							<div id="pickTwoInfoRow" class="infoRow hidden">
-								<p><b><u><i>
-									Click on 1 or 2 atoms on the canvas as the ring's basis!
+								<p>
+								<span class="glyphicon glyphicon-info-sign"></span>
+								<b><u><i>
+									Click on 1 atom as a fixed vertex, or a bond as a fixed side to build the ring!
 									<!-- <span class="glyphicon glyphicon-arrow-right"></span> -->
 								</i></u></b></p>
 								<p class="infoElement">

@@ -54,6 +54,10 @@ var main = function() {
 			$("#newAtom").removeClass("hidden"); // Turn on newAtom
 			$("#newGroup").addClass("hidden"); // Turn off newGroup
 			$("#newRing").addClass("hidden"); // Turn off newRing
+			if (atoms.length > 0) {
+				$("#boSelect").removeClass("hidden");
+				$("#boSelectLabel").removeClass("hidden");
+			}
 			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", false);
 			
@@ -61,6 +65,10 @@ var main = function() {
 			$("#newGroup").removeClass("hidden");
 			$("#newAtom").addClass("hidden");
 			$("#newRing").addClass("hidden");
+			if (atoms.length > 0) {
+				$("#boSelect").removeClass("hidden");
+				$("#boSelectLabel").removeClass("hidden");
+			}
 			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", false);
 			
@@ -122,25 +130,12 @@ var main = function() {
 		} else if (new_element == "group") {
 			add_new_group_to_canvas(func_group_name);
 		} else if (new_element == "ring") {
-			
-			for (var a in two_atoms_to_bond) {
-				console.log(two_atoms_to_bond[a].element);
-			}
-			
 			// If there isn't an atom to bond to and the canvas isn't empty
-			if (two_atoms_to_bond.length == 0 && atoms.length != 0) {
-				$("#alertModal").find("p").html("Click on 1 atom as a fixed vertex, or 2 atoms as a fixed side for the ring.");
+			if (!atom_picked && !bond_picked && atoms.length != 0) {
+				$("#alertModal").find("p").html("Click on 1 atom as a fixed vertex, or a bond as a fixed side for the ring.");
 				$("#alertModal").modal();
 				return;
 			}
-			// If these two atoms are not directly connected, alert
-			if (two_atoms_to_bond.length == 2 &&
-			    two_atoms_to_bond[0].neighbors.indexOf(two_atoms_to_bond[1]) < 0) {
-				$("#alertModal").find("p").html("The two atoms you have selected are not directly connected to each other.");
-				$("#alertModal").modal();
-				return;
-			}
-			
 			// How big is the ring?
 			var size = parseInt($("#ringSelect").val());
 			// if "other" is selected, enable the text box.
@@ -148,9 +143,9 @@ var main = function() {
 				size = parseInt($("#ringInput").val());
 			}
 			if (!size >= 3) {    // Check if size is valid
-				$("#ringSelect").addClass("invalidInput");
+				$("#ringInput").addClass("invalidInput");
 			    setTimeout(function() {
-			        $("#ringSelect").removeClass("invalidInput");
+			        $("#ringInput").removeClass("invalidInput");
 			    }, 1000); // waiting one second
 				return;
 			}
@@ -195,9 +190,9 @@ var main = function() {
 				}
 				var b = create_bond(prev_atom, atom_0, 1);
 				add_to_fabric_group(b.fabric_bond);
-			} else if (two_atoms_to_bond.length == 1) {
+			} else if (atom_picked) {
 				// Start with one fixed atom
-				prev_atom = two_atoms_to_bond[0];
+				prev_atom = atom_picked;
 				atom_0 = prev_atom;
 				count++;
 				var center_angle = new_atom_angle(prev_atom);
@@ -224,9 +219,84 @@ var main = function() {
 				}
 				var b = create_bond(prev_atom, atom_0, 1);
 				add_to_fabric_group(b.fabric_bond);
-			} else if (two_atoms_to_bond.length == 2) {
+			} else if (bond_picked) {
 				// Start with one fixed side
-				// TODO: Need to know which side to put the ring
+				// Which side should the ring be on?
+				var side = $("#ringSideSelect").val();
+				count += 2;
+				// Always clockwise
+				// top: right atom -> left atom
+				// bottom: left -> right
+				// left: top -> bottom
+				// right: bottom -> top
+				if (side == "top") {
+					// The one with bigger x coordinate is atom_0
+					if (bond_picked.atom1.abs_left > bond_picked.atom2.abs_left) {
+						atom_0 = bond_picked.atom1;
+						prev_atom = bond_picked.atom2;
+					} else {
+						atom_0 = bond_picked.atom2;
+						prev_atom = bond_picked.atom1;
+					}
+				} else if (side == "bottom") {
+					if (bond_picked.atom1.abs_left > bond_picked.atom2.abs_left) {
+						atom_0 = bond_picked.atom2;
+						prev_atom = bond_picked.atom1;
+					} else {
+						atom_0 = bond_picked.atom1;
+						prev_atom = bond_picked.atom2;
+					}
+				} else if (side == "right") {
+					// The one with bigger y is atom 0
+					if (bond_picked.atom1.abs_top > bond_picked.atom2.abs_top) {
+						atom_0 = bond_picked.atom1;
+						prev_atom = bond_picked.atom2;
+					} else {
+						atom_0 = bond_picked.atom2;
+						prev_atom = bond_picked.atom1;
+					}
+				} else if (side == "left") {
+					if (bond_picked.atom1.abs_top > bond_picked.atom2.abs_top) {
+						atom_0 = bond_picked.atom2;
+						prev_atom = bond_picked.atom1;
+					} else {
+						atom_0 = bond_picked.atom1;
+						prev_atom = bond_picked.atom2;
+					}
+				}
+
+				var angle = bond_picked.angle;
+				if (atom_0.abs_left > prev_atom.abs_left) { // right to left
+					// Flip angle 180 degrees
+					if (angle > 0) {
+						angle -= 180;
+					} else {
+						angle += 180;
+					}
+				}
+				while (count < size) {
+					if (count <= 1) {
+						angle = center_angle - theta / 2;
+					} else {
+						angle = angle + 360/size;
+					}
+					var x = prev_atom.abs_left + D * Math.cos(angle*Math.PI/180);
+					var y = prev_atom.abs_top  + D * Math.sin(angle*Math.PI/180);
+					var a = create_atom("C", x, y);
+					add_to_fabric_group(a.fabric_atom);
+					center_and_update_coords();
+					// If the new atom is not in frame
+					adjust_frame_zoom(a);
+
+					// Bond the two atoms
+					var b = create_bond(a, prev_atom, 1);
+					add_to_fabric_group(b.fabric_bond);
+					prev_atom = a;
+					count++;
+				}
+				var b = create_bond(prev_atom, atom_0, 1);
+				add_to_fabric_group(b.fabric_bond);
+				
 			}
 			// Reset active objects
 			var allObjects = canvas.getObjects();
@@ -328,6 +398,13 @@ var main = function() {
 			allObjects[i].set('active', false);
 		}
 		canvas.renderAll();
+		
+
+		$("#atomOrGroup").val("default");
+		$("#newAtom").addClass("hidden");
+		$("#newGroup").addClass("hidden");
+		$("#newRing").addClass("hidden");
+		$("#bondBtn").prop("disabled", true);
 	});
 	
 	/* Left - An imported functional group is clicked */
@@ -763,6 +840,11 @@ var main = function() {
 		
 		// Update canvas
 		add_to_fabric_group(new_bond.fabric_bond);
+		bond_picked.atom1.fabric_atom.fontWeight = "normal";
+		bond_picked.atom1.fabric_atom.setColor("#black");
+		bond_picked.atom2.fabric_atom.fontWeight = "normal";
+		bond_picked.atom2.fabric_atom.setColor("#black");
+		
 		// Reset active objects
 		var allObjects = canvas.getObjects();
 		for (var i = 0; i < allObjects.length; i++) {
@@ -773,6 +855,7 @@ var main = function() {
 			active_atom.get_properties();
 		}
 		canvas.renderAll();
+		
 		bond_picked = null;
 		display_bond_picked();
 	});
@@ -807,12 +890,12 @@ var main = function() {
 	});
 	$("#quitPickedAtoms").click(function() {
 		disable_pick_ring_base();
-		$("#pickTwoInfoRow").addClass("hidden");
+
 		$("#atomOrGroup").val("default");
 		$("#newAtom").addClass("hidden");
 		$("#newGroup").addClass("hidden");
 		$("#newRing").addClass("hidden");
-		
+	
 		$("#bondBtn").prop("disabled", true);
 	});
 	
@@ -846,6 +929,9 @@ function reset_all() {
 	$("input").val("");
 	$("select").val("default");
 	$("#bondBtn").html("Add to canvas!");
+	$("#newAtom").addClass("hidden");
+	$("#newGroup").addClass("hidden");
+	$("#newRing").addClass("hidden");
 	// Because the first atom doesn't need a bond
 	$("#boSelect").addClass("hidden");
 	$("#boSelectLabel").addClass("hidden");
@@ -925,9 +1011,6 @@ function new_atom_angle(old_atom) {
 	var r_score = r + tr + br - l - tl - bl;
 	var t_score = t + tr + tl - b - br - bl;
 	
-	// TODO: Make multiple atoms fit in the direction, else user cannot change 
-	// direction after overlap!
-	
 	var angle = 0;
 	var check_order = [];
 	var angle_to_dir = {
@@ -965,22 +1048,33 @@ function new_atom_angle(old_atom) {
 	}
 	
 	// Establish the order of the angles to check
-	for (var i=0; i<5; i++) {
-		var next_angle = angle + i*45;
-		if (next_angle > 180) {
-			next_angle -= 360;
-		} else if ( next_angle <= -180) {
-			next_angle += 360;
-		}
-		check_order.push(next_angle);
-		if (i != 0 && i != 4) {
-			next_angle = angle - i*45;
+	if (new_r == 0 && new_t == 0) { // If there is no preference
+		check_order.push(0);
+		check_order.push(180);
+		check_order.push(-90);
+		check_order.push(90);
+		check_order.push(-45);
+		check_order.push(45);
+		check_order.push(-135);
+		check_order.push(135);
+	} else {
+		for (var i=0; i<5; i++) {
+			var next_angle = angle + i*45;
 			if (next_angle > 180) {
 				next_angle -= 360;
 			} else if ( next_angle <= -180) {
 				next_angle += 360;
 			}
 			check_order.push(next_angle);
+			if (i != 0 && i != 4) {
+				next_angle = angle - i*45;
+				if (next_angle > 180) {
+					next_angle -= 360;
+				} else if ( next_angle <= -180) {
+					next_angle += 360;
+				}
+				check_order.push(next_angle);
+			}
 		}
 	}
 	
@@ -995,173 +1089,11 @@ function new_atom_angle(old_atom) {
 /* Calculate coords for creating the new atom. Return object with x, y as keys. */
 function new_atom_coords(old_atom, distance) {
 	var coords = {x: old_atom.abs_left, y: old_atom.abs_top};
+	var angle = new_atom_angle(old_atom) / 180 * Math.PI; // radians
+	coords.x += distance * Math.cos(angle);
+	coords.y += distance * Math.sin(angle);
+	return coords;
 	
-	// Simplification: only 8 directions. Separate 360 degrees to 8 sections.
-	// See if old_atom has any bonds in that direction, 0 or 1.
-	var r  = (old_atom.bond_dirs["right"].length==0? 0:1);
-	var l  = (old_atom.bond_dirs["left"].length==0? 0:1);
-	var t  = (old_atom.bond_dirs["top"].length==0? 0:1);
-	var b  = (old_atom.bond_dirs["bottom"].length==0? 0:1);
-	var tr = (old_atom.bond_dirs["top-right"].length==0? 0:1);
-	var tl = (old_atom.bond_dirs["top-left"].length==0? 0:1);
-	var br = (old_atom.bond_dirs["bottom-right"].length==0? 0:1);
-	var bl = (old_atom.bond_dirs["bottom-left"].length==0? 0:1);
-	// r and l can cancel each other, t and b can cancel each other
-	var r_score = r + tr + br - l - tl - bl;
-	var t_score = t + tr + tl - b - br - bl;
-	
-	if (Math.abs(r_score) == Math.abs(t_score)) {
-		// Try right, left, top, bottom, tr, tl, br, bl in order
-		if (r == 0) {
-			coords.x += distance;
-			return coords;
-		} else if (l == 0) {
-			coords.x -= distance;
-			return coords;
-		} else if (t == 0) {
-			coords.y -= distance;
-			return coords;
-		} else if (b == 0) {
-			coords.y += distance;
-			return coords;
-		} else if (tr == 0) {
-			coords.x += distance / 1.4142;
-			coords.y -= distance / 1.4142;
-			return coords;
-		} else if (tl == 0) {
-			coords.x -= distance / 1.4142;
-			coords.y -= distance / 1.4142;
-			return coords;
-		} else if (br == 0) {
-			coords.x += distance / 1.4142;
-			coords.y += distance / 1.4142;
-			return coords;
-		} else if (bl == 0) {
-			coords.x -= distance / 1.4142;
-			coords.y += distance / 1.4142;
-			return coords;
-		}
-		
-	} else if (Math.abs(r_score) > Math.abs(t_score)) {
-		// If left-right has stronger preference
-		if (r_score > 0) {
-			// Try left first
-			if (l == 0) {
-				coords.x -= distance;
-				return coords;
-			} else if (t_score > 0) {
-				// Try bl then tl
-				if (bl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				} else if (tl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				}
-			} else {
-				// Try tl then bl
-				if (tl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				} else if (bl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				}
-			}
-		} else { // r_score <= 0
-			// Try right first
-			if (r == 0) {
-				coords.x += distance;
-				return coords;
-			} else if (t_score > 0) {
-				// Try br then tr
-				if (br == 0) {
-					coords.x += distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				} else if (tr == 0) {
-					coords.x += distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				}
-			} else {
-				// Try tr then br
-				if (tr == 0) {
-					coords.x += distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				} else if (br == 0) {
-					coords.x += distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				}
-			}
-			
-		}
-	} else {
-		// If top-bottom has stronger preference
-		if (t_score > 0) {
-			// Try bottom first
-			if (b == 0) {
-				coords.y += distance;
-				return coords;
-			} else if (r_score > 0) {
-				// Try bl then br
-				if (bl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				} else if (br == 0) {
-					coords.x += distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				}
-			} else {
-				// Try br then bl
-				if (br == 0) {
-					coords.x += distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				} else if (bl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y += distance / 1.4142;
-					return coords;
-				}
-			}
-		} else {
-			// Try top first
-			if (t == 0) {
-				coords.y -= distance;
-				return coords;
-			} else if (r_score > 0) {
-				// Try tl then tr
-				if (tl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				} else if (tr == 0) {
-					coords.x += distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				}
-			} else {
-				// Try tr then tl
-				if (tr == 0) {
-					coords.x += distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				} else if (tl == 0) {
-					coords.x -= distance / 1.4142;
-					coords.y -= distance / 1.4142;
-					return coords;
-				}
-			}
-		}
-	}
 }
 
 /* Create new Atom at (x,y), update atoms, formula, sidebar. Return Atom. */
@@ -1394,6 +1326,8 @@ function add_new_group_to_canvas(group_name) {
 			active_atom = a;
 			add_to_fabric_group(a.fabric_atom);
 			center_and_update_coords();
+			// If the new atom is not in frame
+			adjust_frame_zoom(a);
 		} else {
 			for (var n=0; n<atom_info["neighbors"].length; n++) {
 				// The one connected to the active_atom
@@ -1458,12 +1392,12 @@ function center_and_update_coords() {
 		bonds[i].update_coords();
 	}
 }
-function adjust_frame_zoom(atom) {
+function adjust_frame_zoom(atom) { //TODO!
 	// If the new atom is not in frame
-	if (atom && (atom.abs_left   < R*canvas.getZoom()  ||
-	          atom.abs_right  > canvas.getWidth() - R*canvas.getZoom() ||
-	          atom.abs_top    < R*canvas.getZoom() ||
-	          atom.abs_bottom > canvas.getHeight() - R*canvas.getZoom())) {
+	while (atom &&
+		(Math.abs(atom.rel_left) > (canvas.getWidth()/2-R)/canvas.getZoom() ||
+		 Math.abs(atom.rel_top) > (canvas.getHeight()/2-R)/canvas.getZoom() ))
+	{
 		var group_center = new fabric.Point(fabric_group.left, fabric_group.top);
 		var newZoom = canvas.getZoom() * 0.9;
 		canvas.zoomToPoint(group_center, newZoom);
@@ -1566,28 +1500,45 @@ function disable_pick_ring_base() {
 	pick_ring_base = false;
 	// $("#pickTwoInfoRow").addClass("hidden");
 	// resizeCanvas();
-	while (two_atoms_to_bond.length > 0) {
-		var a = two_atoms_to_bond.shift();
-		a.fabric_atom.fontWeight = "normal";
-		a.fabric_atom.setColor("black");
+	if (atom_picked) {
+		atom_picked.fabric_atom.fontWeight = "normal";
+		atom_picked.fabric_atom.setColor("black");
+		atom_picked = null;
+	}
+	if (bond_picked) {
+		var lines = bond_picked.fabric_bond._objects;
+		for (var i in lines) {
+			if (lines[i].get("type") == "line") {
+				lines[i].stroke = "black";
+				lines[i].strokeWidth = 1.5;
+			}
+		}
+		bond_picked.atom1.fabric_atom.fontWeight = "normal";
+		bond_picked.atom1.fabric_atom.setColor("#black");
+		bond_picked.atom2.fabric_atom.fontWeight = "normal";
+		bond_picked.atom2.fabric_atom.setColor("#black");
+		bond_picked = null;
+		
+		$("#ringSideSelectLabel").addClass("hidden");
+		$("#ringSideSelect").addClass("hidden");
 	}
 	canvas.renderAll();
-	// Enable adding new atoms
-	// $("#bondBtn").prop("disabled", false);
+	
+	$("#pickTwoInfoRow").addClass("hidden");
 }
 function display_atoms_to_bond() {
-	if (two_atoms_to_bond.length == 0) {
-		$("#pickTwoInfo").html("<b>Click on 1 or 2 atoms as the base of an aromatic ring</b>");
+	if (!atom_picked && !bond_picked) {
+		$("#pickTwoInfo").html("<b>Click on an atom or a bond as the base of a ring</b>");
 	} else {
-		$("#pickTwoInfo").html("<b>Atoms picked:</b> ");
-		for (var i=0; i<two_atoms_to_bond.length; i++) {
-			$("#pickTwoInfo").append(two_atoms_to_bond[i].element + " ");
+		$("#pickTwoInfo").html("<b>Atom(s) picked:</b> ");
+		if (atom_picked) {
+			$("#pickTwoInfo").append(atom_picked.element);
+		} else if (bond_picked) {
+			$("#pickTwoInfo").append(bond_picked.atom1.element + " " + bond_picked.atom2.element);
 		}
-		if (two_atoms_to_bond.length == 2) {
-			$("#okPickedAtoms").prop("disabled", false);
-		} else {
-			$("#okPickedAtoms").prop("disabled", true);
-		}
+		// for (var i=0; i<two_atoms_to_bond.length; i++) {
+		// 	$("#pickTwoInfo").append(two_atoms_to_bond[i].element + " ");
+		// }
 	}
 }
 /* Return the path between two atoms selected. */
@@ -1662,6 +1613,10 @@ function disable_pick_bond() {
 				lines[i].strokeWidth = 1.5;
 			}
 		}
+		bond_picked.atom1.fabric_atom.fontWeight = "normal";
+		bond_picked.atom1.fabric_atom.setColor("#black");
+		bond_picked.atom2.fabric_atom.fontWeight = "normal";
+		bond_picked.atom2.fabric_atom.setColor("#black");
 		bond_picked = null;
 	}
 	canvas.renderAll();
@@ -1912,42 +1867,8 @@ class Atom {
 		getBond[this.id] = {};
 		
 		this.fabric_atom.on("mousedown", function(options){
-			// In the case of picking two atoms to bond...
-			if (pick_ring_base) {
-				// If the clicked atom is already selected, then deselect
-				var i = two_atoms_to_bond.indexOf(self);
-				if (i >= 0) {
-					var old_selection = two_atoms_to_bond[i];
-					old_selection.fabric_atom.fontWeight = "normal";
-					old_selection.fabric_atom.setColor("black");
-					two_atoms_to_bond.splice(i, 1);
-				}
-				// Select the new atom
-				else {
-					if (two_atoms_to_bond.length == 2) {
-						var old_selection = two_atoms_to_bond.shift();
-						old_selection.fabric_atom.fontWeight = "normal";
-						old_selection.fabric_atom.setColor("black");
-					}
-					two_atoms_to_bond.push(self);
-					// canvas.setActiveObject(this);
-					this.fontWeight = "bold";
-					this.setColor("#d3349e");
-					
-					// If the user picks 2 atoms, need to ask which side
-					if (two_atoms_to_bond.length == 2) {
-					    two_atoms_to_bond[0].neighbors.indexOf(two_atoms_to_bond[1]) < 0
-						$("#alertModal").find("p").html("The two atoms you have selected are not directly connected to each other.");
-						$("#alertModal").modal();
-						return;
-					}
-				}
-
-				canvas.renderAll();
-				display_atoms_to_bond();
-			}
-			// Pick one atom to erase
-			else if (pick_atom_to_erase || pick_atom_to_change || pick_atom_to_move) {
+			// Pick one atom
+			if (pick_atom_to_erase || pick_atom_to_change || pick_atom_to_move || pick_ring_base) {
 				// If the clicked atom is already selected, then deselect
 				if (atom_picked == self) {
 					atom_picked.fabric_atom.fontWeight = "normal";
@@ -1956,6 +1877,26 @@ class Atom {
 				}
 				// Select the new atom
 				else {
+					// Deselect the old bond_picked
+					if (bond_picked) {
+						var lines = bond_picked.fabric_bond._objects;
+						for (var i in lines) {
+							if (lines[i].get("type") == "line") {
+								lines[i].stroke = "black";
+								lines[i].strokeWidth = 1.5;
+							}
+						}
+						bond_picked.atom1.fabric_atom.fontWeight = "normal";
+						bond_picked.atom1.fabric_atom.setColor("#black");
+						bond_picked.atom2.fabric_atom.fontWeight = "normal";
+						bond_picked.atom2.fabric_atom.setColor("#black");
+						bond_picked = null;
+						if (pick_ring_base) {
+							$("#ringSideSelectLabel").addClass("hidden");
+							$("#ringSideSelect").addClass("hidden");
+						}
+					}
+					// Deselect the old atom_picked
 					if (atom_picked) {
 						atom_picked.fabric_atom.fontWeight = "normal";
 						atom_picked.fabric_atom.setColor("black");
@@ -1965,12 +1906,15 @@ class Atom {
 					this.setColor("#d3349e");
 				}
 				canvas.renderAll();
+				// Update texts and select boxes
 				if (pick_atom_to_erase) {
 					display_atom_to_erase();
 				} else if (pick_atom_to_change) {
 					display_atom_to_change();
 				} else if (pick_atom_to_move) {
 					display_atom_to_move();
+				} else if (pick_ring_base) {
+					display_atoms_to_bond();
 				}
 			}
 			// Default, normal, show properties
@@ -2121,36 +2065,92 @@ class Bond {
 		this.fabric_bond.on("mousedown", function(options){
 			
 			// In the case of picking a bond to change...
-			if (pick_bond) {
-				if (bond_picked) {
-					var lines = bond_picked.fabric_bond._objects;
+			if (pick_bond || pick_ring_base) {
+				var lines;
+				
+				// Deselect bond_picked if it is clicked the second time
+				if (bond_picked == self) {
+					lines = bond_picked.fabric_bond._objects;
 					for (var i in lines) {
 						if (lines[i].get("type") == "line") {
 							lines[i].stroke = "black";
 							lines[i].strokeWidth = 1.5;
 						}
 					}
-					// If the clicked bond is already selected, then deselect
-					if (bond_picked == self) {
-						bond_picked = null;
-						canvas.renderAll();
-						display_bond_picked();
-						return;
+					bond_picked.atom1.fabric_atom.fontWeight = "normal";
+					bond_picked.atom1.fabric_atom.setColor("#black");
+					bond_picked.atom2.fabric_atom.fontWeight = "normal";
+					bond_picked.atom2.fabric_atom.setColor("#black");
+					bond_picked = null;
+					
+					if (pick_ring_base) {
+						$("#ringSideSelectLabel").addClass("hidden");
+						$("#ringSideSelect").addClass("hidden");
+					}
+					
+				// Select this bond
+				} else {
+					// Deselect the old bond_picked
+					if (bond_picked) {
+						lines = bond_picked.fabric_bond._objects;
+						for (var i in lines) {
+							if (lines[i].get("type") == "line") {
+								lines[i].stroke = "black";
+								lines[i].strokeWidth = 1.5;
+							}
+						}
+						bond_picked.atom1.fabric_atom.fontWeight = "normal";
+						bond_picked.atom1.fabric_atom.setColor("#black");
+						bond_picked.atom2.fabric_atom.fontWeight = "normal";
+						bond_picked.atom2.fabric_atom.setColor("#black");
+					}
+					// Deselect the old atom_picked
+					if (atom_picked) {
+						atom_picked.fabric_atom.fontWeight = "normal";
+						atom_picked.fabric_atom.setColor("black");
+						atom_picked = null;
+					}
+					
+					// Select this one as bond_picked
+					bond_picked = self;
+					lines = this._objects;
+					for (var i in lines) {
+						if (lines[i].get("type") == "line") {
+							lines[i].stroke = "#d3349e";
+							lines[i].strokeWidth = 2;
+						}
+					}
+					bond_picked.atom1.fabric_atom.fontWeight = "bold";
+					bond_picked.atom1.fabric_atom.setColor("#d3349e");
+					bond_picked.atom2.fabric_atom.fontWeight = "bold";
+					bond_picked.atom2.fabric_atom.setColor("#d3349e");
+					
+					// Ask which side to put the ring if pick_ring_base
+					if (pick_ring_base) {
+						$("#ringSideSelectLabel").removeClass("hidden");
+						$("#ringSideSelect").removeClass("hidden");
+						if (self.angle > 45 && self.angle < 135 ||
+						    self.angle < -45 && self.angle > -135) {
+							$("#ringSideSelect").html(
+								"<option value='left'>left</option>" +
+								"<option value='right'>right</option>"
+							);
+						} else {
+							$("#ringSideSelect").html(
+								"<option value='top'>top</option>" +
+								"<option value='bottom'>bottom</option>"
+							);
+						}
 					}
 				}
-				bond_picked = self;
-				var lines = this._objects;
-				for (var i in lines) {
-					if (lines[i].get("type") == "line") {
-						lines[i].stroke = "#d3349e";
-						lines[i].strokeWidth = 2;
-					}
-				}
-				canvas.renderAll();
-				display_bond_picked();
-				return;
 			}
-			
+			canvas.renderAll();
+			// Update texts and select boxes
+			if (pick_bond) {
+				display_bond_picked();
+			} else if (pick_ring_base) {
+				display_atoms_to_bond();
+			}
 			// canvas.setActiveObject(this);
 			// canvas.renderAll();
 			
