@@ -303,7 +303,7 @@ function load_func_groups($filepath) {
 if (isset($_GET["is_load_molecules"])) {
 
 	load_molecules("collection-molecules.txt");
-	load_molecules("other-molecules.txt");
+	// load_molecules("other-molecules.txt");
 	echo json_encode($molecules);
 }
 

@@ -449,9 +449,13 @@ var main = function() {
 	$("#threeDBtn").click(function() {
 		// Clear everything
 		scene = new THREE.Scene();
+		group = new THREE.Group();
 		
 		// Get the structure of the molecule
 		var structure = molecules[formula];
+		if (!structure) {
+			return;
+		}
 		if (structure["format"] != "full" &&  structure["format"] != "3d") {
 			// Sorry, no 3d coordinates for you
 			return;
@@ -535,10 +539,6 @@ var main = function() {
 					b1.position.set((x+nx)/2, (y+ny)/2, (z+nz)/2);
 					group.add(b1);
 				}
-				// var newBond = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, len), material);
-				// newBond.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
-				// newBond.position.set((x+nx)/2, (y+ny)/2, (z+nz)/2);
-				// group.add(newBond);
 			}
 		}
 
