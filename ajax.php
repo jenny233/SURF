@@ -15,6 +15,9 @@ if ($conn->connect_error) {
 $PRIMARY_TB = "primary_factor";
 $SECONDARY_TB = "secondary_factor";
 
+// Adjustment for aromatic rings
+$l_0 = -0.0029;
+
 
 /* Function: get factor from database
  * Parameter: Atom1, Atom2, bond order, primary/secondary table
@@ -86,9 +89,9 @@ function get_factor($Atom1, $Atom2, $BondOrder, $tb_name) {
  *
  * Add everything together, and that is the answer.
  */
-function process_factor_query() {
+function process_factor_query($is_aromatic_ring) {
 	
-	global $PRIMARY_TB, $SECONDARY_TB;
+	global $PRIMARY_TB, $SECONDARY_TB, $l_0;
 	
 	$bonds = json_decode($_GET['json_query'], true);
 	$sum = 0;
@@ -111,13 +114,17 @@ function process_factor_query() {
 		}
 		echo "<p>".$l_char."<sub>".$bond["Atom1"].$bond_char.$bond["Atom2"]."</sub> = ".$f."</p>";
 	}
+	if ($is_aromatic_ring) {
+		$sum += $l_0;
+		echo "<p>l<sub>0</sub> = ".$l_0."</p>";
+	}
 	echo "<h4>&beta; = ".($sum+1)."</h4>";
 }
 
 
 
 if (isset($_GET['is_factor_query'])) {
-	process_factor_query();
+	process_factor_query($_GET['is_aromatic_ring']);
 }
 
 $conn->close();

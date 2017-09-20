@@ -3,8 +3,8 @@ R = 18
 D = 70;
 D_H = 42;
 M = 70;
-R_3D = 0.5;
-R_3D_H = 0.2;
+R_3D = 0.4;
+R_3D_H = 0.15;
 
 // Arrays of all atoms and bonds
 var atoms = [];
@@ -174,9 +174,12 @@ var main = function() {
 			var count = 0;
 			var prev_atom;
 			var atom_0;
+			var ring = new Ring();
 			if (atoms.length == 0) {
 			    // The first atom will be at the center
 				prev_atom = create_atom("C", 0, 0);  // Default Carbon
+				ring.atoms.push(prev_atom); // prev_atom is in the ring now
+				prev_atom.ring = ring;
 				atom_0 = prev_atom;
 				add_to_fabric_group(prev_atom.fabric_atom);
 				center_and_update_coords();
@@ -192,6 +195,8 @@ var main = function() {
 					var x = prev_atom.abs_left + D * Math.cos(angle*Math.PI/180);
 					var y = prev_atom.abs_top  + D * Math.sin(angle*Math.PI/180);
 					var a = create_atom("C", x, y);
+					ring.atoms.push(a); // a is in the ring now
+					a.ring = ring;
 					add_to_fabric_group(a.fabric_atom);
 					center_and_update_coords();
 					// If the new atom is not in frame
@@ -199,15 +204,21 @@ var main = function() {
 
 					// Bond the two atoms
 					var b = create_bond(a, prev_atom, 1);
+					ring.bonds.push(b); // b is in the ring now
+					b.ring = ring;
 					add_to_fabric_group(b.fabric_bond);
 					prev_atom = a;
 					count++;
 				}
 				var b = create_bond(prev_atom, atom_0, 1);
+				ring.bonds.push(b); // b is in the ring now
+				b.ring = ring;
 				add_to_fabric_group(b.fabric_bond);
 			} else if (atom_picked) {
 				// Start with one fixed atom
 				prev_atom = atom_picked;
+				ring.atoms.push(prev_atom); // prev_atom is in the ring now
+				prev_atom.ring = ring;
 				atom_0 = prev_atom;
 				count++;
 				var center_angle = new_atom_angle(prev_atom);
@@ -221,6 +232,8 @@ var main = function() {
 					var x = prev_atom.abs_left + D * Math.cos(angle*Math.PI/180);
 					var y = prev_atom.abs_top  + D * Math.sin(angle*Math.PI/180);
 					var a = create_atom("C", x, y);
+					ring.atoms.push(a); // a is in the ring now
+					a.ring = ring;
 					add_to_fabric_group(a.fabric_atom);
 					center_and_update_coords();
 					// If the new atom is not in frame
@@ -228,11 +241,15 @@ var main = function() {
 
 					// Bond the two atoms
 					var b = create_bond(a, prev_atom, 1);
+					ring.bonds.push(b); // b is in the ring now
+					b.ring = ring;
 					add_to_fabric_group(b.fabric_bond);
 					prev_atom = a;
 					count++;
 				}
 				var b = create_bond(prev_atom, atom_0, 1);
+				ring.bonds.push(b); // b is in the ring now
+				b.ring = ring;
 				add_to_fabric_group(b.fabric_bond);
 			} else if (bond_picked) {
 				// Start with one fixed side
@@ -279,6 +296,12 @@ var main = function() {
 						prev_atom = bond_picked.atom2;
 					}
 				}
+				ring.atoms.push(atom_0); // a is in the ring now
+				atom_0.ring = ring;
+				ring.atoms.push(prev_atom); // a is in the ring now
+				prev_atom.ring = ring;
+				ring.bonds.push(bond_picked); // b is in the ring now
+				bond_picked.ring = ring;
 
 				var angle = bond_picked.angle;
 				if (atom_0.abs_left > prev_atom.abs_left) { // right to left
@@ -298,6 +321,8 @@ var main = function() {
 					var x = prev_atom.abs_left + D * Math.cos(angle*Math.PI/180);
 					var y = prev_atom.abs_top  + D * Math.sin(angle*Math.PI/180);
 					var a = create_atom("C", x, y);
+					ring.atoms.push(a); // a is in the ring now
+					a.ring = ring;
 					add_to_fabric_group(a.fabric_atom);
 					center_and_update_coords();
 					// If the new atom is not in frame
@@ -305,11 +330,15 @@ var main = function() {
 
 					// Bond the two atoms
 					var b = create_bond(a, prev_atom, 1);
+					ring.bonds.push(b); // b is in the ring now
+					b.ring = ring;
 					add_to_fabric_group(b.fabric_bond);
 					prev_atom = a;
 					count++;
 				}
 				var b = create_bond(prev_atom, atom_0, 1);
+				ring.bonds.push(b); // b is in the ring now
+				b.ring = ring;
 				add_to_fabric_group(b.fabric_bond);
 				
 			}
@@ -2088,13 +2117,25 @@ class Atom {
 			type: "GET",
 			url: "ajax.php",
 		    data: {
-				 "is_factor_query": true,
-			     "json_query": JSON.stringify(query_array)},
+				"is_factor_query": true,
+				"is_aromatic_ring": self.is_aromatic(),
+			    "json_query": JSON.stringify(query_array)},
 			success: function(response){
 				$("#factor").html("<h4>Isotopic factor</h4>");
 				$("#factor").append(response);
 			}
 		});
+	}
+	
+	is_aromatic() {
+		if (self.ring) {
+			for (var i in self.ring.bonds) {
+				if (self.ring.bonds[i].order > 1) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	update_coords() {
@@ -2295,6 +2336,13 @@ class Bond {
 		this.rel_top  = this.fabric_bond.top;
 		this.abs_left = this.rel_left + fabric_group.left;
 		this.abs_top  = this.rel_top + fabric_group.top;
+	}
+}
+
+class Ring {
+	constructor() {
+		this.atoms = [];
+		this.bonds = [];
 	}
 }
 
