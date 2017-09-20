@@ -3,6 +3,8 @@ R = 18
 D = 70;
 D_H = 42;
 M = 70;
+R_3D = 0.5;
+R_3D_H = 0.2;
 
 // Arrays of all atoms and bonds
 var atoms = [];
@@ -13,7 +15,20 @@ var molecules = {};
 var func_groups = {};
 // getBond[atom1.id][atom2.id] gives a Bond
 // Careful! Need "getBond[atom.id] = {}" everytime a new Atom is created.
-var getBond = {};
+var getBond = {}; // Not in use any more
+var color_3d = {
+	"H": 0xffffff, // white
+	"C": 0x8d8d8d, // grey
+	"N": 0x8f8fff, // light blue
+	"O": 0xff3030, // red
+	"F": 0xa8ed7e, // light green
+	"P": 0xffa926, // orange
+	"S": 0xfffa5b, // yellow
+	"Cl": 0x8ae751,// green
+	"Br": 0xc97a43,// brown
+	"I": 0xc656b2, // purple
+	"X": 0x404040  // dark grey
+};
 
 var active_atom; // Active atom to display properties
 
@@ -436,60 +451,97 @@ var main = function() {
 		scene = new THREE.Scene();
 		
 		// Get the structure of the molecule
-		
-		var sphere = new THREE.SphereGeometry(0.2, 50, 50);
-		var sphere_N = new THREE.SphereGeometry(0.5, 50, 50);
-		var material_N = new THREE.MeshLambertMaterial({
-			// shading: THREE.FlatShading,
-			color: 0x4360cc
-		});
-		var material_H = new THREE.MeshLambertMaterial({
-			// shading: THREE.FlatShading,
-			color: 0xffffff
-		});
-		var material_b = new THREE.MeshLambertMaterial({
-			// shading: THREE.FlatShading,
-			color: 0x8d8d8d
-		});
-		var N = new THREE.Mesh(sphere_N, material_N);
-		var H3 = new THREE.Mesh(sphere, material_H);
-		var H1 = new THREE.Mesh(sphere, material_H);
-		var H2 = new THREE.Mesh(sphere, material_H);
-		
-		N.position.set(0, 0, 0);
-		H1.position.set(-0.4417, 0.2906, 0.8711);
-		H2.position.set(0.7256, 0.6896, -0.1907);
-		H3.position.set(0.4875, -0.8701, 0.2089);
-		
-		var len_NH1 = Math.sqrt(-0.4417*-0.4417 + 0.2906*0.2906 + 0.8711*0.8711);
-		var len_NH2 = Math.sqrt(0.7256*0.7256 + 0.6896*0.6896 + -0.1907*-0.1907);
-		var len_NH3 = Math.sqrt(0.4875*0.4875 + -0.8701*-0.8701 + 0.2089*0.2089);
-		
-		var vec_NH1 = new THREE.Vector3(-0.4417, 0.2906, 0.8711);
-		var vec_NH2 = new THREE.Vector3(0.7256, 0.6896, -0.1907);
-		var vec_NH3 = new THREE.Vector3(0.4875, -0.8701, 0.2089);
-		
-		var axis = new THREE.Vector3(0, 1, 0);
-		
-		var NH1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, len_NH1), material_b);
-		var NH2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, len_NH2), material_b);
-		var NH3 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, len_NH3), material_b);
-		
-		NH1.quaternion.setFromUnitVectors(axis, vec_NH1.clone().normalize());
-		NH2.quaternion.setFromUnitVectors(axis, vec_NH2.clone().normalize());
-		NH3.quaternion.setFromUnitVectors(axis, vec_NH3.clone().normalize());
+		var structure = molecules[formula];
+		if (structure["format"] != "full" &&  structure["format"] != "3d") {
+			// Sorry, no 3d coordinates for you
+			return;
+		}
+			
+		// The sphere atoms
+		for (var i=0; i<structure["n_atoms"]; i++) {
+			var atom_info = structure["atoms"][i];
+			var atomColor;
+			var shpere;
+			var material;
+			var newAtom;
+			if (atom_info["element"] == "H") {
+				sphere = new THREE.SphereGeometry(R_3D_H, 50, 50);
+			} else {
+				sphere = new THREE.SphereGeometry(R_3D, 50, 50);
+			}
+			if (Object.keys(color_3d).indexOf(atom_info["element"]) >= 0) {
+				atomColor = color_3d[atom_info["element"]];
+			} else {
+				atomColor = color_3d["X"];
+			}
+			material = new THREE.MeshLambertMaterial({
+				// shading: THREE.FlatShading,
+				color: atomColor
+			});
+			newAtom = new THREE.Mesh(sphere, material);
+			newAtom.position.set(atom_info["x_3d"], atom_info["y_3d"], atom_info["z_3d"]);
+			group.add(newAtom);
+		}
 
-		NH1.position.set(-0.4417/2, 0.2906/2, 0.8711/2);
-		NH2.position.set(0.7256/2, 0.6896/2, -0.1907/2);
-		NH3.position.set(0.4875/2, -0.8701/2, 0.2089/2);
-		
-		group.add(NH1);
-		group.add(NH2);
-		group.add(NH3);
-		group.add(N);
-		group.add(H3);
-		group.add(H1);
-		group.add(H2);
+		// The cylinder bonds
+		for (var i=0; i<structure["n_atoms"]; i++) {
+			var axis = new THREE.Vector3(0, 1, 0); // axis to set the angle
+			var material = new THREE.MeshLambertMaterial({
+				// shading: THREE.FlatShading,
+				color: color_3d["X"]
+			});
+			// Coordinates of the atom
+			var atom_info = structure["atoms"][i];
+			var x = parseFloat(atom_info["x_3d"]);
+			var y = parseFloat(atom_info["y_3d"]);
+			var z = parseFloat(atom_info["z_3d"]);
+			// Build the bonds
+			for (var j=0; j<atom_info["neighbors"].length; j++) {
+				var n = parseInt(atom_info["neighbors"][j]);
+				var bo = parseInt(atom_info["bos"][j]);
+				var nx = parseFloat(structure["atoms"][n]["x_3d"]);
+				var ny = parseFloat(structure["atoms"][n]["y_3d"]);
+				var nz = parseFloat(structure["atoms"][n]["z_3d"]);
+				var dx = x - nx;
+				var dy = y - ny;
+				var dz = z - nz;
+				var len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+				var vec = new THREE.Vector3(dx, dy, dz);
+				if (bo == 2) {
+					var b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len), material);
+					b1.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+					b1.position.set((x+nx)/2, (y+ny)/2 + 0.2, (z+nz)/2);
+					group.add(b1);
+					var b2 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len), material);
+					b2.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+					b2.position.set((x+nx)/2, (y+ny)/2 - 0.2, (z+nz)/2);
+					group.add(b2);
+				} else if (bo == 3) {
+					var b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len), material);
+					b1.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+					b1.position.set((x+nx)/2, (y+ny)/2 + 0.2, (z+nz)/2);
+					group.add(b1);
+					var b2 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len), material);
+					b2.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+					b2.position.set((x+nx)/2, (y+ny)/2, (z+nz)/2);
+					group.add(b2);
+					var b3 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len), material);
+					b3.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+					b3.position.set((x+nx)/2, (y+ny)/2 - 0.2, (z+nz)/2);
+					group.add(b3);
+				} else { // bo == 1 and others default to this
+					var b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len), material);
+					b1.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+					b1.position.set((x+nx)/2, (y+ny)/2, (z+nz)/2);
+					group.add(b1);
+				}
+				// var newBond = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, len), material);
+				// newBond.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+				// newBond.position.set((x+nx)/2, (y+ny)/2, (z+nz)/2);
+				// group.add(newBond);
+			}
+		}
+
 		scene.add(group);
 		
 		var dirLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -498,10 +550,7 @@ var main = function() {
 		var light = new THREE.AmbientLight( 0x404040 ); // soft white light
 		scene.add( light );
 		
-		// camera.position.x = 0.5;
-		// camera.position.z = 3;
 		camera.position.z = 3;
-		// camera.focus = 100000;
 		
 	});
 	
@@ -1129,6 +1178,8 @@ function create_atom(element, x, y, id) {
 	} else {
 		formula_dict[element] += 1;
 	}
+	update_formula();
+
 	
 	return a;
 }
@@ -1392,7 +1443,7 @@ function center_and_update_coords() {
 		bonds[i].update_coords();
 	}
 }
-function adjust_frame_zoom(atom) { //TODO!
+function adjust_frame_zoom(atom) {
 	// If the new atom is not in frame
 	while (atom &&
 		(Math.abs(atom.rel_left) > (canvas.getWidth()/2-R)/canvas.getZoom() ||
@@ -1402,6 +1453,52 @@ function adjust_frame_zoom(atom) { //TODO!
 		var newZoom = canvas.getZoom() * 0.9;
 		canvas.zoomToPoint(group_center, newZoom);
 		center_and_update_coords();
+	}
+}
+
+/* Update and change the chemical formula variable */
+function update_formula() {
+	formula = "";
+	// If there is C, C->H->the rest alphabetical
+	if (formula_dict["C"] && formula_dict["C"] > 0) {
+		formula += "C";
+		if (formula_dict["C"] > 1) {
+			formula += formula_dict["C"];
+		}
+		// Append H
+		if (formula_dict["H"] && formula_dict["H"] > 0) {
+			formula += "H";
+			if (formula_dict["H"] > 1) {
+				formula += formula_dict["H"];
+			}
+		}
+		
+		// Display the rest of the elements in alphabetical order.
+		var elements = Object.keys(formula_dict);
+		elements.sort();
+		for (var i=0; i<elements.length; i++) {
+		    var e = elements[i];
+		    var n = formula_dict[e];
+		    if (e != "C" && e != "H" && n > 0) {
+				formula += e;
+				if (n > 1) {
+					formula += n;
+				}
+		    }
+		} 
+	} 
+	// If there is no C, just alphabetical
+	else {
+		var elements = Object.keys(formula_dict);
+		elements.sort();
+		for (var i=0; i<elements.length; i++) {
+		    var e = elements[i];
+		    var n = formula_dict[e];
+			formula += e;
+			if (n > 1) {
+				formula += n;
+			}
+		} 
 	}
 }
 
@@ -1931,56 +2028,16 @@ class Atom {
 		
 		/* DISPLAY THE CHEMICAL FORMULA WITH HILL SYSTEM: */
 		$("#formula").html("<h4>Chemical formula</h4><p id=formula_line></p>");
-		formula = "";
-		
-		// If there is C, C->H->the rest alphabetical
-		if (formula_dict["C"] && formula_dict["C"] > 0) {
-			$("#formula_line").append("C");
-			formula += "C";
-			if (formula_dict["C"] > 1) {
-				$("#formula_line").append("<sub>"+formula_dict["C"]+"</sub>");
-				formula += formula_dict["C"];
+		for (var i=0; i<formula.length; i++) {
+			var char = formula.charAt(i);
+			// if char is a number
+			if (char >= "0" && char <= "9") {
+				$("#formula_line").append("<sub>"+char+"</sub>");
 			}
-			// Append H
-			if (formula_dict["H"] && formula_dict["H"] > 0) {
-				$("#formula_line").append("H");
-				formula += "H";
-				if (formula_dict["H"] > 1) {
-					$("#formula_line").append("<sub>"+formula_dict["H"]+"</sub>");
-					formula += formula_dict["H"];
-				}
+			// if char is a letter
+			else {
+				$("#formula_line").append(char);
 			}
-			
-			// Display the rest of the elements in alphabetical order.
-			var elements = Object.keys(formula_dict);
-			elements.sort();
-			for (var i=0; i<elements.length; i++) {
-			    var e = elements[i];
-			    var n = formula_dict[e];
-			    if (e != "C" && e != "H" && n > 0) {
-			    	$("#formula_line").append(e);
-					formula += e;
-					if (n > 1) {
-						$("#formula_line").append("<sub>"+n+"</sub>");
-						formula += n;
-					}
-			    }
-			} 
-		} 
-		// If there is no C, just alphabetical
-		else {
-			var elements = Object.keys(formula_dict);
-			elements.sort();
-			for (var i=0; i<elements.length; i++) {
-			    var e = elements[i];
-			    var n = formula_dict[e];
-		    	$("#formula_line").append(e);
-				formula += e;
-				if (n > 1) {
-					$("#formula_line").append("<sub>"+n+"</sub>");
-					formula += n;
-				}
-			} 
 		}
 		
 		/* DISPLAY THE ATOM SELECTED */
