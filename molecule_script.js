@@ -895,7 +895,6 @@ var main = function() {
 		var atom1 = bond_picked.atom1;
 		var atom2 = bond_picked.atom2;
 		var old_bo = bond_picked.order;
-		
 
 		// Remove fabric_bond from canvas
 		fabric_group.removeWithUpdate(bond_picked.fabric_bond);
@@ -903,6 +902,13 @@ var main = function() {
 		
 		var new_bond = new Bond(atom1, atom2, new_bo, angle);
 		bonds.splice(id, 1, new_bond);
+		
+		// If the bond is part of a ring, replace it
+		if (bond_picked.ring) {
+			var pos = bond_picked.ring.bonds.indexOf(bond_picked);
+			bond_picked.ring.bonds[pos] = new_bond;
+			new_bond.ring = bond_picked.ring;
+		}
 		
 		// Replace the bond in atoms' bonds array
 		var index = atom1.bonds.indexOf(bond_picked);
@@ -2113,12 +2119,13 @@ class Atom {
 		}
 		
 		// PHP call to database
+		var aromatic = this.is_aromatic();
 		$.ajax({
 			type: "GET",
 			url: "ajax.php",
 		    data: {
 				"is_factor_query": true,
-				"is_aromatic_ring": self.is_aromatic(),
+				"is_aromatic_ring": aromatic,
 			    "json_query": JSON.stringify(query_array)},
 			success: function(response){
 				$("#factor").html("<h4>Isotopic factor</h4>");
@@ -2128,9 +2135,9 @@ class Atom {
 	}
 	
 	is_aromatic() {
-		if (self.ring) {
-			for (var i in self.ring.bonds) {
-				if (self.ring.bonds[i].order > 1) {
+		if (this.ring) {
+			for (var i in this.ring.bonds) {
+				if (this.ring.bonds[i].order > 1) {
 					return true;
 				}
 			}

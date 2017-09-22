@@ -114,7 +114,7 @@ function process_factor_query($is_aromatic_ring) {
 		}
 		echo "<p>".$l_char."<sub>".$bond["Atom1"].$bond_char.$bond["Atom2"]."</sub> = ".$f."</p>";
 	}
-	if ($is_aromatic_ring) {
+	if ($is_aromatic_ring == "true") {
 		$sum += $l_0;
 		echo "<p>l<sub>0</sub> = ".$l_0."</p>";
 	}
