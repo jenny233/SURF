@@ -61,8 +61,8 @@ var main = function() {
 	
 	
 	/* Left - User picks atom or functional group or ring */
-	// $("#atomOrGroup").change(function(){
-	$("#atomOrGroup").on("click", "option", function() {
+	$("#atomOrGroup").change(function(){
+	// $("#atomOrGroup").on("click", "option", function() {
 		var value = $("#atomOrGroup").val();
 		new_element = value;
 		if (value == "atom") {
