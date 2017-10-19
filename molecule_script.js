@@ -2128,7 +2128,7 @@ class Atom {
 				"is_aromatic_ring": aromatic,
 			    "json_query": JSON.stringify(query_array)},
 			success: function(response){
-				$("#factor").html("<h4>Isotopic factor</h4>");
+				$("#factor").html("<h4>&beta; factor</h4>");
 				$("#factor").append(response);
 			}
 		});
