@@ -117,5 +117,12 @@ Jieni Li, *California Institute of Technology*
 
 Mentor: Dr. John Eiler, *California Institute of Technology*
 
+## Acknowledgements
+
+This project would not be possible without the discussions with my mentor Professor Eiler, as well as financial support from Caltech and Kiyo and Eiko Tomiyasu. It also benefited greatly from the help of my colleagues Surya Mathialagan and Shreya Ramachandran.
+
+## Questions?
+
+Email: jli5@caltech.edu
 
 
