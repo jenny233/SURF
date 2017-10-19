@@ -89,4 +89,33 @@ Used to add new molecules, functional groups, rings, or atoms onto the canvas.
 
 ### Right Column: Properties
 
+After you get your desired molecule structure, click on an atom to see the properties:
+
+- Chemical formula of the structure using the Hill system
+
+- Selected atom
+
+- The &beta; factor and the bond numbers used to calculate it
+
+- Neighbors of the selected atom
+
+
+## Built with
+
+- [Fabric.js](fabricjs.com) - 2D canvas
+
+- [Three.js](threejs.org) - 3D WebGL rendering
+
+- [Bootstrap](getbootstrap.com) - Webpage structure
+
+- [Glyphicons](http://glyphicons.com/) - Icons used in the web interface
+
+
+## Author
+
+Jieni Li, *California Institute of Technology*
+
+Mentor: Dr. John Eiler, *California Institute of Technology*
+
+
 
