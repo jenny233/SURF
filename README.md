@@ -102,11 +102,11 @@ After you get your desired molecule structure, click on an atom to see the prope
 
 ## Built with
 
-- [Fabric.js](fabricjs.com) - 2D canvas
+- [Fabric.js](http://fabricjs.com/) - 2D canvas
 
-- [Three.js](threejs.org) - 3D WebGL rendering
+- [Three.js](http://threejs.org/) - 3D WebGL rendering
 
-- [Bootstrap](getbootstrap.com) - Webpage structure
+- [Bootstrap](http://getbootstrap.com/) - Webpage structure
 
 - [Glyphicons](http://glyphicons.com/) - Icons used in the web interface
 
