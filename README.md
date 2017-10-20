@@ -17,7 +17,7 @@ The interface is organized into three columns: left, middle, and right.
 
 ### Middle column: Canvas
 
-Uses <canvas> element and Fabric.js to display the molecular structure that the user builds or imports.
+Uses `<canvas>` element and Fabric.js to display the molecular structure that the user builds or imports.
 
 The top toolbar is used to edit the existing structure on the canvas or show a 3D model. Below are the toolbar functionalities:
 
