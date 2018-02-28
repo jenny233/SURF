@@ -55,11 +55,11 @@ var main = function() {
 	reset_all();
 	load_molecule_structures();
 	load_func_group_structures();
-	
-	$('[data-toggle="tooltip"]').tooltip(); 
-	
-	
-	
+
+	$('[data-toggle="tooltip"]').tooltip();
+
+
+
 	/* Left - User picks atom or functional group or ring */
 	$("#atomOrGroup").change(function(){
 	// $("#atomOrGroup").on("click", "option", function() {
@@ -75,7 +75,7 @@ var main = function() {
 			}
 			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", false);
-			
+
 		} else if (value == "group") {
 			$("#newGroup").removeClass("hidden");
 			$("#newAtom").addClass("hidden");
@@ -86,7 +86,7 @@ var main = function() {
 			}
 			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", false);
-			
+
 		} else if (value == "ring") {
 			$("#newRing").removeClass("hidden");
 			$("#newAtom").addClass("hidden");
@@ -113,9 +113,9 @@ var main = function() {
 			disable_pick_ring_base();
 			$("#bondBtn").prop("disabled", true);
 		}
-		
+
 	});
-	
+
 	/* Left - User selects the bond order */
 	$("#boSelect").change(function(){
 		var value = parseFloat($("#boSelect").val());
@@ -126,7 +126,7 @@ var main = function() {
 			$("#boInput").addClass("hidden");
 		}
 	});
-	
+
 	/* Left - User selects the ring size */
 	$("#ringSelect").change(function() {
 		var value = parseInt($("#ringSelect").val());
@@ -137,7 +137,7 @@ var main = function() {
 			$("#ringInput").addClass("hidden");
 		}
 	})
-	
+
 	/* Left - Bond button! */
     $("#bondBtn").click(function() {
 		if (new_element == "atom") {
@@ -164,7 +164,7 @@ var main = function() {
 			    }, 1000); // waiting one second
 				return;
 			}
-			
+
 			// Create the ring
 			// The angle from the first atom to the ring center is known
 			// by calling new_atom_coords()
@@ -340,7 +340,7 @@ var main = function() {
 				ring.bonds.push(b); // b is in the ring now
 				b.ring = ring;
 				add_to_fabric_group(b.fabric_bond);
-				
+
 			}
 			// Reset active objects
 			var allObjects = canvas.getObjects();
@@ -352,9 +352,9 @@ var main = function() {
 				active_atom.get_properties();
 			}
 			canvas.renderAll();
-			
-			
-			
+
+
+
 			disable_pick_ring_base();
 			$("#pickTwoInfoRow").addClass("hidden");
 			$("#atomOrGroup").val("default");
@@ -362,10 +362,10 @@ var main = function() {
 			$("#newGroup").addClass("hidden");
 			$("#newRing").addClass("hidden");
 			$("#bondBtn").prop("disabled", true);
-			
+
 		}
     });
-	
+
 	/* Left - Search molecule bar, show choices */
 	$("#searchMolecule").focusin(function() {
 		if ($("#searchMolecule").val() != "") {
@@ -376,8 +376,8 @@ var main = function() {
 	    setTimeout(function() {
 	        $("#moleculeList").addClass("hidden");
 	    }, 200);
-	});	
-	
+	});
+
 	/* Left - Search functional group bar, show choices */
 	$("#searchFuncGroup").focusin(function() {
 		if ($("#searchFuncGroup").val() != "") {
@@ -388,25 +388,25 @@ var main = function() {
 	    setTimeout(function() {
 	        $("#funcGroupList").addClass("hidden");
 	    }, 200);
-	});	
-	
+	});
+
 	/* Left - An imported molecule is clicked */
 	$("#moleculeList").on("click", "li", function() {
-		
+
 		// If there already exists atoms, ask if user wants to clear the screen
 		if (atoms.length > 0) {
 			$("#alertModal").find("p").html("The canvas needs to be cleared before importing a new molecule.");
 			$("#alertModal").modal();
 			return;
 		}
-		
+
 		var text = $(this).text();
 		$("#searchMolecule").val(text);
-		
+
 		// Get the structure of this molecule
 		var f_name = text.substr(0,text.indexOf(" -- "));
 		var structure = molecules[f_name];
-		
+
 		for (var i=0; i<structure["n_atoms"]; i++) {
 			var atom_info = structure["atoms"][i];
 			var newAtom = create_atom(
@@ -415,7 +415,7 @@ var main = function() {
 				atom_info["y_2d"] * M
 			);
 		}
-		
+
 		for (var i=0; i<structure["n_atoms"]; i++) {
 			var atom_info = structure["atoms"][i];
 			for (var j=0; j<atom_info["neighbors"].length; j++) {
@@ -423,26 +423,26 @@ var main = function() {
 				var newBond = create_bond(atoms[i], atoms[n], atom_info["bos"][j]);
 			}
 		}
-		
+
 		for (var i in atoms) {
 			add_to_fabric_group(atoms[i].fabric_atom);
 		}
 		for (var i in bonds) {
 			add_to_fabric_group(bonds[i].fabric_bond);
 		}
-		
+
 		center_and_update_coords();
-		
+
 		for (var a in atoms) {
 			adjust_frame_zoom(atoms[a]);
 		}
-		
+
 		var allObjects = canvas.getObjects();
 		for (var i = 0; i < allObjects.length; i++) {
 			allObjects[i].set('active', false);
 		}
 		canvas.renderAll();
-		
+
 
 		$("#atomOrGroup").val("default");
 		$("#newAtom").addClass("hidden");
@@ -450,36 +450,36 @@ var main = function() {
 		$("#newRing").addClass("hidden");
 		$("#bondBtn").prop("disabled", true);
 	});
-	
+
 	/* Left - An imported functional group is clicked */
 	$("#funcGroupList").on("click", "li", function() {
-		
+
 		var text = $(this).text();
 		$("#searchFuncGroup").val(text);
 		// Get the structure of this molecule
 		func_group_name = text.substr(0,text.indexOf(" -- "));
 		// add_new_group_to_canvas(common_name);
-		
+
 	});
-	
-	
-	
+
+
+
 	/* Top - Clear all */
 	$("#clearBtn").click(function() {
 		reset_all();
 	});
-	
+
 	/* Top - Center everything */
 	$("#centerBtn").click(function() {
 		center_and_update_coords();
 	})
-	
+
 	/* Top - Show 3D */
 	$("#threeDBtn").click(function() {
 		// Clear everything
 		scene = new THREE.Scene();
 		group = new THREE.Group();
-		
+
 		// Get the structure of the molecule
 		var structure = molecules[formula];
 		if (!structure) {
@@ -489,7 +489,7 @@ var main = function() {
 			// Sorry, no 3d coordinates for you
 			return;
 		}
-			
+
 		// The sphere atoms
 		for (var i=0; i<structure["n_atoms"]; i++) {
 			var atom_info = structure["atoms"][i];
@@ -572,17 +572,17 @@ var main = function() {
 		}
 
 		scene.add(group);
-		
+
 		var dirLight = new THREE.DirectionalLight(0xffffff, 1);
 		dirLight.position.set(50, 100, 100);
 		scene.add(dirLight);
 		var light = new THREE.AmbientLight( 0x404040 ); // soft white light
 		scene.add( light );
-		
+
 		camera.position.z = 3;
-		
+
 	});
-	
+
 	/* Top - Erase an atom */
 	$("#eraseBtn").click(function() {
 		if (pick_atom_to_erase) {
@@ -600,7 +600,7 @@ var main = function() {
 				fabric_group.removeWithUpdate(atom_picked.fabric_atom);
 				canvas.remove(atom_picked.fabric_atom);
 				atom_picked = null;
-				
+
 				display_atom_to_erase();
 				center_and_update_coords();
 			}
@@ -614,7 +614,7 @@ var main = function() {
 				index = neighbor.bonds.indexOf(bond);
 				neighbor.bonds.splice(index, 1);
 				neighbor.n_bonds -= bond.order;
-				
+
 				// Update the bond directions for neighbor
 				for (var d in neighbor.bond_dirs) {
 					// neighbor.bond_dirs[d] is an array of bonded atoms
@@ -629,7 +629,7 @@ var main = function() {
 				canvas.remove(atom_picked.fabric_atom);
 				fabric_group.removeWithUpdate(bond.fabric_bond);
 				canvas.remove(bond.fabric_bond);
-				
+
 				// Reset active objects
 				var allObjects = canvas.getObjects();
 				for (var i = 0; i < allObjects.length; i++) {
@@ -637,7 +637,7 @@ var main = function() {
 				}
 				canvas.renderAll();
 				atom_picked = null;
-				
+
 				display_atom_to_erase();
 				center_and_update_coords();
 			}
@@ -650,12 +650,12 @@ var main = function() {
 			$("#alertModal").find("p").html("Plase first select an atom to erase.\n(The atom can only be bonded to one other atom.)");
 			$("#alertModal").modal();
 		}
-		
+
 	});
 	$("#quitErase").click(function() {
 		disable_pick_atom_to_erase();
 	});
-	
+
 	/* Top - Change an atom */
 	$("#changeAtomBtn").click(function() {
 		if (pick_atom_to_change) {
@@ -687,7 +687,7 @@ var main = function() {
 		atom_picked.fabric_atom.text = new_element;
 		atom_picked.fabric_atom.fontWeight = "normal";
 		atom_picked.fabric_atom.setColor("black");
-		
+
 		// Reset active objects
 		var allObjects = canvas.getObjects();
 		if (active_atom) {
@@ -696,13 +696,13 @@ var main = function() {
 		}
 		canvas.renderAll();
 		atom_picked = null;
-		
+
 		display_atom_to_change();
 	});
 	$("#quitChangeAtom").click(function() {
 		disable_pick_atom_to_change();
 	});
-	
+
 	/* Top - Change an atom's position */
 	$("#changePosBtn").click(function() {
 		if (pick_atom_to_move) {
@@ -747,7 +747,7 @@ var main = function() {
 		var new_atom = turn_atom_by_theta(theta);
 		// Adjust formulat dict because 1 is added by create_atom()
 		formula_dict[atom_picked.element]--;
-		
+
 		// Reset active objects
 		var allObjects = canvas.getObjects();
 		for (var i = 0; i < allObjects.length; i++) {
@@ -766,7 +766,7 @@ var main = function() {
 			if (index >= 0) {
 				n.bond_dirs[d].splice(index, 1);
 			}
-			
+
 			// Turn to the nearest empty spot
 			var count = 0; // we don't want an infinite loop
 			var theta = 0; // degrees we turn by
@@ -791,17 +791,17 @@ var main = function() {
 					d = "right";
 				}
 			} while (n.bond_dirs[d].length != 0 && count < 8)
-			
+
 			// If all the spots are filled
 			if (count == 8) {
 				return;
 			}
-			
+
 			var new_atom = turn_atom_by_theta(theta);
 			// Adjust formulat dict because 1 is added by create_atom()
 			formula_dict[atom_picked.element]--;
-		
-			
+
+
 			// Reset active objects
 			var allObjects = canvas.getObjects();
 			for (var i = 0; i < allObjects.length; i++) {
@@ -824,7 +824,7 @@ var main = function() {
 			if (index >= 0) {
 				n.bond_dirs[d].splice(index, 1);
 			}
-			
+
 			// Find the nearest empty spot
 			var count = 0; // we don't want an infinite loop
 			var theta = 0; // degrees we turn by
@@ -849,17 +849,17 @@ var main = function() {
 					d = "bottom-right";
 				}
 			} while (n.bond_dirs[d].length != 0 && count < 8)
-			
+
 			// If all the spots are filled
 			if (count == 8) {
 				return;
 			}
-			
+
 			var new_atom = turn_atom_by_theta(theta);
 			// Adjust formulat dict because 1 is added by create_atom()
 			formula_dict[atom_picked.element]--;
-		
-			
+
+
 			// Reset active objects
 			var allObjects = canvas.getObjects();
 			for (var i = 0; i < allObjects.length; i++) {
@@ -873,7 +873,7 @@ var main = function() {
 	$("#quitChangePos").click(function() {
 		disable_pick_atom_to_move();
 	});
-	
+
 	/* Top - Change Bond Order */
 	$("#changeBOBtn").click(function() {
 		if (pick_bond) {
@@ -899,36 +899,36 @@ var main = function() {
 		// Remove fabric_bond from canvas
 		fabric_group.removeWithUpdate(bond_picked.fabric_bond);
 		canvas.remove(bond_picked.fabric_bond);
-		
+
 		var new_bond = new Bond(atom1, atom2, new_bo, angle);
 		bonds.splice(id, 1, new_bond);
-		
+
 		// If the bond is part of a ring, replace it
 		if (bond_picked.ring) {
 			var pos = bond_picked.ring.bonds.indexOf(bond_picked);
 			bond_picked.ring.bonds[pos] = new_bond;
 			new_bond.ring = bond_picked.ring;
 		}
-		
+
 		// Replace the bond in atoms' bonds array
 		var index = atom1.bonds.indexOf(bond_picked);
 		atom1.bonds.splice(index, 1, new_bond);
 		index = atom2.bonds.indexOf(bond_picked);
 		atom2.bonds.splice(index, 1, new_bond);
-		
+
 		// Modify their n_bonds
 		atom1.n_bonds -= old_bo;
 		atom2.n_bonds -= old_bo;
 		atom1.n_bonds += new_bo;
 		atom2.n_bonds += new_bo;
-		
+
 		// Update canvas
 		add_to_fabric_group(new_bond.fabric_bond);
 		bond_picked.atom1.fabric_atom.fontWeight = "normal";
 		bond_picked.atom1.fabric_atom.setColor("#black");
 		bond_picked.atom2.fabric_atom.fontWeight = "normal";
 		bond_picked.atom2.fabric_atom.setColor("#black");
-		
+
 		// Reset active objects
 		var allObjects = canvas.getObjects();
 		for (var i = 0; i < allObjects.length; i++) {
@@ -939,14 +939,14 @@ var main = function() {
 			active_atom.get_properties();
 		}
 		canvas.renderAll();
-		
+
 		bond_picked = null;
 		display_bond_picked();
 	});
 	$("#quitChangeBO").click(function() {
 		disable_pick_bond();
 	});
-	
+
 	/* Top - Pick atoms as base of the new ring */
 	$("#okPickedAtoms").click(function() {
 		var start = two_atoms_to_bond[0];
@@ -954,12 +954,12 @@ var main = function() {
 		if (!start || !end) {
 			$("#pickTwoInfo").html("<b>Click on two atoms to bond to form an aromatic ring</b>");
 			return;
-		} 
+		}
 		if (getBond[start.id][end.id]) {
 			$("#pickTwoInfo").html("<b>The two atoms are already directly bonded</b>");
 			return;
 		}
-		
+
 		// TODO: bond the two atoms, recalculate bond angles
 		var path = atoms_on_ring();
 		for (var i=0; i<path.length; i++) {
@@ -979,10 +979,10 @@ var main = function() {
 		$("#newAtom").addClass("hidden");
 		$("#newGroup").addClass("hidden");
 		$("#newRing").addClass("hidden");
-	
+
 		$("#bondBtn").prop("disabled", true);
 	});
-	
+
 
 }
 
@@ -999,16 +999,16 @@ function reset_all() {
 	bonds = [];
 	formula_dict = {};
 	formula = "";
-	
+
 	// Canvas stuff
 	clear_canvas();
-	
+
 	// Right sidebar properties
 	$("#prop").find("section").empty();
 	// $("#neighbors").empty();
 	// $("#factor").empty();
 	// $("#formula").empty();
-	
+
 	// Left selection sidebar
 	$("input").val("");
 	$("select").val("default");
@@ -1019,14 +1019,14 @@ function reset_all() {
 	// Because the first atom doesn't need a bond
 	$("#boSelect").addClass("hidden");
 	$("#boSelectLabel").addClass("hidden");
-	
+
 	// Top toolbar
 	disable_pick_atom_to_erase();
 	disable_pick_bond();
 	disable_pick_ring_base();
 	disable_pick_atom_to_change();
 	disable_pick_atom_to_move();
-	
+
 }
 function clear_canvas() {
 	canvas.selection = false; // group selection disabled
@@ -1053,6 +1053,7 @@ function load_molecule_structures() {
 	$.ajax({
 		type: "GET",
 		url: "structure_parse.php",
+		contentType: "text/html",
 	    data: {
 			"is_load_molecules": true,
 			},
@@ -1067,6 +1068,7 @@ function load_func_group_structures() {
 	$.ajax({
 		type: "GET",
 		url: "structure_parse.php",
+		contentType: "text/html",
 	    data: {
 			"is_load_func_group": true,
 			},
@@ -1090,11 +1092,11 @@ function new_atom_angle(old_atom) {
 	var tl = (old_atom.bond_dirs["top-left"].length==0? 0:1);
 	var br = (old_atom.bond_dirs["bottom-right"].length==0? 0:1);
 	var bl = (old_atom.bond_dirs["bottom-left"].length==0? 0:1);
-	
+
 	// Calculate l/r and t/b tendencies of existing bonds
 	var r_score = r + tr + br - l - tl - bl;
 	var t_score = t + tr + tl - b - br - bl;
-	
+
 	var angle = 0;
 	var check_order = [];
 	var angle_to_dir = {
@@ -1107,11 +1109,11 @@ function new_atom_angle(old_atom) {
 		"-90" : t,
 		"-135": tl
 	};
-	
+
 	// Calculating l/r and t/b tendencies of the new bond
 	var new_r = 0 - r_score;
 	var new_t = 0 - t_score;
-	
+
 	// Translate that into an angle
 	if (new_r >= 1 && new_t == 0) {
 		angle = 0;
@@ -1130,7 +1132,7 @@ function new_atom_angle(old_atom) {
 	} else if (new_r <= -1 && new_t == 0) {
 		angle = 180;
 	}
-	
+
 	// Establish the order of the angles to check
 	if (new_r == 0 && new_t == 0) { // If there is no preference
 		check_order.push(0);
@@ -1161,13 +1163,13 @@ function new_atom_angle(old_atom) {
 			}
 		}
 	}
-	
+
 	for (var i in check_order) {
 		if (angle_to_dir[check_order[i]] == 0) {
 			return check_order[i];
 		}
 	}
-	
+
 }
 
 /* Calculate coords for creating the new atom. Return object with x, y as keys. */
@@ -1177,19 +1179,19 @@ function new_atom_coords(old_atom, distance) {
 	coords.x += distance * Math.cos(angle);
 	coords.y += distance * Math.sin(angle);
 	return coords;
-	
+
 }
 
 /* Create new Atom at (x,y), update atoms, formula, sidebar. Return Atom. */
 function create_atom(element, x, y, id) {
 	// The Atom object
-	
+
 	if (id || id == 0) {     // If id is specified
 		var a = new Atom(element, x, y, id);
 	} else {                 // If id is not specified
 		var a = new Atom(element, x, y);
 	}
-	
+
 	// If this is the first atom
 	if (atoms.length == 0) {
 		// active_atom = a;
@@ -1199,14 +1201,14 @@ function create_atom(element, x, y, id) {
 		$("#boSelect").removeClass("hidden");
 		$("#boSelectLabel").removeClass("hidden");
 	}
-	
+
 	// Add atom to the list of atoms
 	if (id || id == 0) {
 		atoms[id] = a;
 	} else {
 		atoms.push(a);
 	}
-	
+
 	// Add the atom to the formula
 	if (!formula_dict[element]) {
 		formula_dict[element] = 1;
@@ -1215,7 +1217,7 @@ function create_atom(element, x, y, id) {
 	}
 	update_formula();
 
-	
+
 	return a;
 }
 
@@ -1225,32 +1227,32 @@ function create_bond(atom1, atom2, bo, id) {
 	var angle_rad = Math.atan( (atom1.rel_top-atom2.rel_top)/(atom1.rel_left-atom2.rel_left) );
 	var angle = angle_rad * 180 / Math.PI;
 	// angle is between -90 and 90
-	
+
 	// Create new bond
 	if (id || id == 0) {
 		var b = new Bond(atom1, atom2, bo, angle, id);
 	} else {
 		var b = new Bond(atom1, atom2, bo, angle);
 	}
-	
-	
+
+
 	// Add to bonds array
 	if (id || id == 0) {
 		bonds[id] = b;
 	} else {
 		bonds.push(b);
 	}
-	
+
 	// Update the bonds list for both atoms.
 	atom1.bonds.push(b);
 	atom2.bonds.push(b);
 	atom1.n_bonds += bo;
 	atom2.n_bonds += bo;
-	
+
 	// Update the neighbors list for both atoms.
 	atom1.neighbors.push(atom2);
 	atom2.neighbors.push(atom1);
-	
+
 	// Update the bond_dirs for both atoms.
 	if (angle >= -22.5 && angle < 22.5) {
 		// left-right
@@ -1278,7 +1280,7 @@ function create_bond(atom1, atom2, bo, id) {
 			console.assert(atom2.bond_dirs["bottom-right"].length==0, "Cannot bond, bottom-right direction occupied.", atom2);
 			atom2.bond_dirs["bottom-right"].push(atom1);
 		}
-	} else if (angle >= 67.5 && angle <= 90 || angle >= -90 && angle < -67.5) { 
+	} else if (angle >= 67.5 && angle <= 90 || angle >= -90 && angle < -67.5) {
 		// top-bottom
 		if (atom1.rel_top < atom2.rel_top) {
 			console.assert(atom1.bond_dirs["bottom"].length==0, "Cannot bond, bottom direction occupied.", atom1);
@@ -1305,8 +1307,8 @@ function create_bond(atom1, atom2, bo, id) {
 			atom2.bond_dirs["top-right"].push(atom1);
 		}
 	}
-	
-	
+
+
 	return b;
 }
 
@@ -1319,7 +1321,7 @@ function add_new_atom_to_canvas() {
 	if (bo == -1) {                // "Other" option is chosen
 		bo = $("#boInput").val();
 	}
-	
+
 	// Check if any of the values are not valid
 	if (atomOrGroup == "default") {
 		$("#atomOrGroup").addClass("invalidInput");
@@ -1342,7 +1344,7 @@ function add_new_atom_to_canvas() {
 	    }, 1000); // waiting one second
 		return;
 	}
-	
+
     // Create new atom!
 	// First calculate where to put the new atom
 	// Then create new Atom
@@ -1377,7 +1379,7 @@ function add_new_atom_to_canvas() {
 		var b = create_bond(a, old_atom, bo);
 		add_to_fabric_group(b.fabric_bond);
 
-	
+
 	}
 	// Reset active objects
 	var allObjects = canvas.getObjects();
@@ -1389,15 +1391,15 @@ function add_new_atom_to_canvas() {
 		active_atom.get_properties();
 	}
 	canvas.renderAll();
-    
+
 }
 function add_new_group_to_canvas(group_name) {
 	var structure = func_groups[group_name];
 	console.log(structure["formula"], structure["n_atoms"]);
-	
+
 	// The numbering offset between atoms array and the txt file
 	var offset = atoms.length;
-	
+
 	for (var i in structure["atoms"]) {
 		var atom_info = structure["atoms"][i];
 	    // Create new atom!
@@ -1428,7 +1430,7 @@ function add_new_group_to_canvas(group_name) {
 				    var old_atom = atoms[old_atom_id];
 					var bo = parseFloat(atom_info["bos"][n]);
 				}
-				
+
 				var element = atom_info["element"];
 				if (element == "H") {
 					var coords = new_atom_coords(old_atom, D_H); // smaller distance
@@ -1444,10 +1446,10 @@ function add_new_group_to_canvas(group_name) {
 				// Bond the two atoms
 				var b = create_bond(a, old_atom, bo);
 				add_to_fabric_group(b.fabric_bond);
-				
+
 			}
 		}
-		
+
 	}
 	// Reset active objects
 	var allObjects = canvas.getObjects();
@@ -1456,7 +1458,7 @@ function add_new_group_to_canvas(group_name) {
 	}
 	active_atom.fabric_atom.set('active', true);
 	active_atom.get_properties();
-	
+
 	canvas.renderAll();
 }
 
@@ -1507,7 +1509,7 @@ function update_formula() {
 				formula += formula_dict["H"];
 			}
 		}
-		
+
 		// Display the rest of the elements in alphabetical order.
 		var elements = Object.keys(formula_dict);
 		elements.sort();
@@ -1520,8 +1522,8 @@ function update_formula() {
 					formula += n;
 				}
 		    }
-		} 
-	} 
+		}
+	}
 	// If there is no C, just alphabetical
 	else {
 		var elements = Object.keys(formula_dict);
@@ -1533,7 +1535,7 @@ function update_formula() {
 			if (n > 1) {
 				formula += n;
 			}
-		} 
+		}
 	}
 }
 
@@ -1545,19 +1547,19 @@ function search_molecule(search_text) {
 		return;
 	}
 	$("#moleculeList").removeClass("hidden");
-	
+
 	search_text = search_text.toUpperCase();
-	
+
 	// Get all the names of the molecules
 	var count = 0;
 	var html_str = "";
 	for (var formula_key in molecules) {
-		
+
 		var common_name = molecules[formula_key]["common_name"];
-		
+
 		if (formula_key.toUpperCase().indexOf(search_text) >= 0 ||
 	        common_name.toUpperCase().indexOf(search_text) >= 0) {
-				
+
 				if (molecules[formula_key]["format"] != "full" &&
 			        molecules[formula_key]["format"] != "2d") {
 					continue;
@@ -1583,21 +1585,21 @@ function search_func_group(search_text) {
 		return;
 	}
 	$("#funcGroupList").removeClass("hidden");
-	
+
 	search_text = search_text.toUpperCase();
-	
+
 	// Get all the names of the functional groups
 	var count = 0;
 	var html_str = "";
 	for (var group_name in func_groups) {
-		
+
 		var formula_name = func_groups[group_name]["formula"];
 		var chemical_class = func_groups[group_name]["class"];
-		
+
 		if (formula_name.indexOf(search_text) >= 0 ||
 	        group_name.toUpperCase().indexOf(search_text) >= 0 ||
 	        chemical_class.toUpperCase().indexOf(search_text) >= 0) {
-				
+
 				html_str += "<li>"+group_name+" -- "+formula_name+"</li>";
 				count += 1;
 				// Only show 6 results at a time
@@ -1620,7 +1622,7 @@ function enable_pick_ring_base() {
 	disable_pick_atom_to_erase();
 	disable_pick_atom_to_change();
 	disable_pick_atom_to_move();
-	
+
 	pick_ring_base = true;
 	// $("#pickTwoInfoRow").removeClass("hidden");
 	// resizeCanvas();
@@ -1650,12 +1652,12 @@ function disable_pick_ring_base() {
 		bond_picked.atom2.fabric_atom.fontWeight = "normal";
 		bond_picked.atom2.fabric_atom.setColor("#black");
 		bond_picked = null;
-		
+
 		$("#ringSideSelectLabel").addClass("hidden");
 		$("#ringSideSelect").addClass("hidden");
 	}
 	canvas.renderAll();
-	
+
 	$("#pickTwoInfoRow").addClass("hidden");
 }
 function display_atoms_to_bond() {
@@ -1677,20 +1679,20 @@ function display_atoms_to_bond() {
 function atoms_on_ring() {
 	var start = two_atoms_to_bond[0];
 	var end   = two_atoms_to_bond[1];
-	
+
 	// Clear visited & parent of all atoms
 	for (var i=0; i<atoms.length; i++) {
 		atoms[i].visited = false;
 		atoms[i].pathParent = null;
 	}
-	
+
 	// A queue to visit
 	var stack = [];
 	stack.push(start);
-	
+
 	// The path found
 	var path = [];
-	
+
 	while (stack.length > 0) {
 		var current = stack.pop();
 		if (current == end) {
@@ -1707,14 +1709,14 @@ function atoms_on_ring() {
 			}
 		}
 	}
-	
+
 	// Trace back to find the path
 	var current = end;
 	while (current) {
 		path.push(current);
 		current = current.pathParent;
 	}
-	
+
 	return path;
 }
 
@@ -1764,7 +1766,7 @@ function display_bond_picked() {
 		$("#changeBOInput").val("");
 		$("#currBO").html(bond_picked.order);
 		$("#okChangeBO").prop("disabled", false);
-		
+
 	}
 }
 
@@ -1775,7 +1777,7 @@ function enable_pick_atom_to_erase() {
 	disable_pick_ring_base();
 	disable_pick_atom_to_change();
 	disable_pick_atom_to_move();
-	
+
 	pick_atom_to_erase = true;
 	$("#eraseInfoRow").removeClass("hidden");
 	$("#tooltipErase").removeClass("hidden");
@@ -1813,7 +1815,7 @@ function enable_pick_atom_to_change() {
 	disable_pick_ring_base();
 	disable_pick_atom_to_erase();
 	disable_pick_atom_to_move();
-	
+
 	pick_atom_to_change = true;
 	$("#changeAtomInfoRow").removeClass("hidden");
 	$("#tooltipAtomChange").removeClass("hidden");
@@ -1852,7 +1854,7 @@ function enable_pick_atom_to_move() {
 	disable_pick_ring_base();
 	disable_pick_atom_to_erase();
 	disable_pick_atom_to_change();
-	
+
 	pick_atom_to_move = true;
 	$("#changePosInfoRow").removeClass("hidden");
 	$("#tooltipPosChange").removeClass("hidden");
@@ -1874,7 +1876,7 @@ function turn_atom_by_theta(theta) {
 	var n = atom_picked.neighbors[0];
 	var x = atom_picked.abs_left - n.abs_left;
 	var y = atom_picked.abs_top  - n.abs_top;
-	
+
 	// Rotate by theta, create new atom
 	var new_x = x * Math.cos(theta) - y * Math.sin(theta) + n.abs_left;
 	var new_y = y * Math.cos(theta) + x * Math.sin(theta) + n.abs_top;
@@ -1883,12 +1885,12 @@ function turn_atom_by_theta(theta) {
 	new_atom.fabric_atom.setColor("#d3349e");
 	new_atom.rel_left = new_atom.abs_left - fabric_group.left;
 	new_atom.rel_top  = new_atom.abs_top  - fabric_group.top;
-	
+
 	// Bond new atom and the neighbor
 	var b = atom_picked.bonds[0];
 	var new_bond = create_bond(new_atom, n, b.order, b.id);
 	new_bond.update_coords();
-	
+
 	// Get rid of the atom & bond pushed onto n.neighbors and n.bonds
 	// due to the create_bond() function. We need them at the correct
 	// place.
@@ -1904,14 +1906,14 @@ function turn_atom_by_theta(theta) {
 	canvas.remove(atom_picked.fabric_atom);
 	fabric_group.removeWithUpdate(b.fabric_bond);
 	canvas.remove(b.fabric_bond);
-	
+
 	// Add new atom and new bond onto canvas
 	add_to_fabric_group(new_atom.fabric_atom);
 	add_to_fabric_group(new_bond.fabric_bond);
 	center_and_update_coords();
 	// If the new atom is not in frame
 	adjust_frame_zoom(new_atom);
-	
+
 	return new_atom;
 }
 function display_atom_to_move() {
@@ -1959,7 +1961,7 @@ function display_atom_to_move() {
 class Atom {
 	constructor(element, x, y, id=atoms.length) {
 		var self = this;
-		
+
 		this.element = element;
 		this.id = id;
 		this.neighbors = [];
@@ -1997,7 +1999,7 @@ class Atom {
 		}
 		// Create new row for getBond[][] lookup map
 		getBond[this.id] = {};
-		
+
 		this.fabric_atom.on("mousedown", function(options){
 			// Pick one atom
 			if (pick_atom_to_erase || pick_atom_to_change || pick_atom_to_move || pick_ring_base) {
@@ -2058,9 +2060,9 @@ class Atom {
 			}
 		});
 	}
-	
+
 	get_properties() {
-		
+
 		/* DISPLAY THE CHEMICAL FORMULA WITH HILL SYSTEM: */
 		$("#formula").html("<h4>Chemical formula</h4><p id=formula_line></p>");
 		for (var i=0; i<formula.length; i++) {
@@ -2074,11 +2076,11 @@ class Atom {
 				$("#formula_line").append(char);
 			}
 		}
-		
+
 		/* DISPLAY THE ATOM SELECTED */
 		$("#selectedAtom").html("<h4>Selected atom</h4>");
 		$("#selectedAtom").append("<p>"+this.element+"</p>");
-		
+
 		/* DISPLAY ALL THE NEIGHBORS & BONDS W/ THEM: */
 		$("#neighbors").html("<h4>Neighbors</h4>");
 		if (this.neighbors.length == 0) {
@@ -2090,7 +2092,7 @@ class Atom {
 									 + "</p>");
 			}
 		}
-		
+
 		/* DISPLAY THE DATA RETRIEVED FROM DATABASE:
 		 *   For all the neighbors of this atom,
 		 *     add {this, neighbor, bondorder, 1} to the array
@@ -2117,12 +2119,13 @@ class Atom {
 				    "Proximity": 2});
 			}
 		}
-		
+
 		// PHP call to database
 		var aromatic = this.is_aromatic();
 		$.ajax({
 			type: "GET",
 			url: "ajax.php",
+			contentType: "text/html",
 		    data: {
 				"is_factor_query": true,
 				"is_aromatic_ring": aromatic,
@@ -2133,7 +2136,7 @@ class Atom {
 			}
 		});
 	}
-	
+
 	is_aromatic() {
 		if (this.ring) {
 			for (var i in this.ring.bonds) {
@@ -2144,7 +2147,7 @@ class Atom {
 		}
 		return false;
 	}
-	
+
 	update_coords() {
 		this.rel_left = this.fabric_atom.left;
 		this.rel_top  = this.fabric_atom.top;
@@ -2166,13 +2169,13 @@ class Bond {
 		// Update getBond[][] lookup map
 		getBond[atom1.id][atom2.id] = this;
 		getBond[atom2.id][atom1.id] = this;
-		
+
 		this.fabric_bond.on("mousedown", function(options){
-			
+
 			// In the case of picking a bond to change...
 			if (pick_bond || pick_ring_base) {
 				var lines;
-				
+
 				// Deselect bond_picked if it is clicked the second time
 				if (bond_picked == self) {
 					lines = bond_picked.fabric_bond._objects;
@@ -2187,12 +2190,12 @@ class Bond {
 					bond_picked.atom2.fabric_atom.fontWeight = "normal";
 					bond_picked.atom2.fabric_atom.setColor("#black");
 					bond_picked = null;
-					
+
 					if (pick_ring_base) {
 						$("#ringSideSelectLabel").addClass("hidden");
 						$("#ringSideSelect").addClass("hidden");
 					}
-					
+
 				// Select this bond
 				} else {
 					// Deselect the old bond_picked
@@ -2215,7 +2218,7 @@ class Bond {
 						atom_picked.fabric_atom.setColor("black");
 						atom_picked = null;
 					}
-					
+
 					// Select this one as bond_picked
 					bond_picked = self;
 					lines = this._objects;
@@ -2229,7 +2232,7 @@ class Bond {
 					bond_picked.atom1.fabric_atom.setColor("#d3349e");
 					bond_picked.atom2.fabric_atom.fontWeight = "bold";
 					bond_picked.atom2.fabric_atom.setColor("#d3349e");
-					
+
 					// Ask which side to put the ring if pick_ring_base
 					if (pick_ring_base) {
 						$("#ringSideSelectLabel").removeClass("hidden");
@@ -2258,10 +2261,10 @@ class Bond {
 			}
 			// canvas.setActiveObject(this);
 			// canvas.renderAll();
-			
+
 		});
 	}
-	
+
 	create_fabric_bond() {
 		// Center coords of the bond middle point
 		// Use abs if atoms are already on the canvas
@@ -2270,7 +2273,7 @@ class Bond {
 		var y  = (this.atom1.abs_top  + this.atom2.abs_top)  / 2;
 		// var x  = (this.atom1.rel_left + this.atom2.rel_left) / 2;
 		// var y  = (this.atom1.rel_top  + this.atom2.rel_top)  / 2;
-		
+
 		// Draw it first horizontally, then rotate to the angle
 		var dx = R * 0.75;
 		var dis = Math.sqrt(
@@ -2279,7 +2282,7 @@ class Bond {
 		          );
 		var start_x = x - (dis/2 - dx);
 		var end_x   = x + (dis/2 - dx);
-		
+
 		var lines = new fabric.Group([], {
 			hoverCursor    : "pointer",
 			selectable     : true,
@@ -2325,7 +2328,7 @@ class Bond {
 				strokeWidth: 1.5
 			}));
 		} else {
-			
+
 		}
 		lines.addWithUpdate(new fabric.Rect({
 		    left: start_x,
@@ -2337,7 +2340,7 @@ class Bond {
 		lines.setAngle(this.angle);
 		return lines;
 	}
-	
+
 	update_coords() {
 		this.rel_left = this.fabric_bond.left;
 		this.rel_top  = this.fabric_bond.top;
@@ -2352,5 +2355,3 @@ class Ring {
 		this.bonds = [];
 	}
 }
-
-
